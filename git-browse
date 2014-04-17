@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# git-browse, v0.1.3
+# git-browse, v0.1.4
 # Author: Nick Sawyer <nick@nicksawyer.net>
 #
 # This script allows developers to easily open the web view of files and directories
@@ -61,10 +61,10 @@ if [[ $ORIGIN == "" ]]; then
     exit 65
 elif [[ $ORIGIN == *github.com* ]]; then
     REMOTE_SERVICE="github"
-elif [[ $ORIGIN == *$STASH_HOSTNAME* ]]; then
+elif [[ $STASH_HOSTNAME != "" && $ORIGIN == *$STASH_HOSTNAME* ]]; then
     REMOTE_SERVICE="stash"
 else
-    echo "Unable to handle origin URL '$ORIGIN'; aborting"
+    echo "Unable to handle origin URL '$ORIGIN'; did you set the 'STASH_HOSTNAME' and 'STASH_URL_ROOT' settings in ~/.gitbrowse?"
     exit 65
 fi
 
@@ -160,10 +160,15 @@ if [[ $GIT_COMPLETION != "" ]]; then
             REF=$(__git_ps1 '%s' | tr -d '()')
         fi
     else
-        echo "Warning: \"$GIT_COMPLETION\" does not exist; unable to determine current head reference"
+        echo "Warning: \"$GIT_COMPLETION\" does not exist; unable to determine current head reference" >&2
     fi
 else
-    echo "Warning: No Git completion path set; this is required for automatic head reference detection"
+    echo "Warning: No Git completion path set; this is required for automatic head reference detection" >&2
+fi
+
+# Default to master if we didn't get a head reference
+if [[ $REF == "" ]]; then
+    REF="master"
 fi
 
 # Build the final URL for the proper service

@@ -13,7 +13,24 @@ Future plans on the roadmap include:
 - Possible support for GitLab, Gitorious, and BitBucket
 
 ## Installation & Setup
-Currently, the easiest way to install this script on your machine is to set up a symlink to the script in a directory that's on your path.  If you don't have a good place for something like this already, I recommend creating a `bin` directory in your home directory, and then adding it to your path by including something like this (before `PATH` is exported) in your `.bashrc/.bash_profile`:
+Currently, the easiest way to install this script on your machine is with Homebrew.
+
+```
+nick@isis:~ $ brew tap nickmoorman/devtools
+Cloning into '/usr/local/Library/Taps/nickmoorman-devtools'...
+remote: Counting objects: 7, done.
+remote: Compressing objects: 100% (5/5), done.
+remote: Total 7 (delta 0), reused 4 (delta 0)
+Unpacking objects: 100% (7/7), done.
+Tapped 1 formula
+
+nick@isis:~ $ brew install git-browse
+==> Downloading https://github.com/nickmoorman/git-browse/archive/0.1.3.tar.gz
+Already downloaded: /Library/Caches/Homebrew/git-browse-0.1.3.tar.gz
+🍺  /usr/local/Cellar/git-browse/0.1.3: 4 files, 36K, built in 2 seconds
+```
+
+The other method is a little more involved, but still simple enough.  It requires you to simply set up a symlink to the script in a directory that's on your path.  If you don't have a good place for something like this already, I recommend creating a `bin` directory in your home directory, and then adding it to your path by including something like this (before `PATH` is exported) in your `.bashrc/.bash_profile`:
 
 ```
 PATH=${HOME}/bin:${PATH}
@@ -184,7 +201,7 @@ Opening 'https://github.com/someuser/somegithubrepo/blob/somebranch/foo/bar/baz.
 Please feel free to fork this repo and contribute to this script.  If contributing, please update the [unit tests](https://github.com/nickmoorman/git-browse/blob/master/test-git-browse.py) accordingly and make sure all tests pass.
 
 ## Changelog
-
+- v0.1.4 (2014-04-17) - Fixed bug caused when no head reference found; added error checking to ensure Stash variables are set; added Homebrew instructions!
 - v0.1.3 (2014-04-17) - Fixed silly bug with GitHub URLs
 - v0.1.2 (2014-04-17) - Improved handling of Git completion script
 - v0.1.1 (2014-04-17) - Separated display logic from other logic
