@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""test-git-browse.py, v0.1.0: Custom unit tests for git-browse Bash script"""
+"""test-git-browse.py, v0.1.3: Custom unit tests for git-browse Bash script"""
 
 __author__ = "Nick Sawyer <nick@nicksawyer.net>"
 

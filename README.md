@@ -184,6 +184,7 @@ Opening 'https://github.com/someuser/somegithubrepo/blob/somebranch/foo/bar/baz.
 Please feel free to fork this repo and contribute to this script.  If contributing, please update the [unit tests](https://github.com/nickmoorman/git-browse/blob/test-git-browse.py) accordingly and make sure all tests pass.
 
 ## Changelog
+v0.1.3 (2014-04-17) - Fixed silly bug with GitHub URLs
 v0.1.2 (2014-04-17) - Improved handling of Git completion script
 v0.1.1 (2014-04-17) - Separated display logic from other logic
 v0.1.0 (2014-04-11) - Initial Release
