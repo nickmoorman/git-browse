@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# git-browse, v0.1.1
+# git-browse, v0.1.2
 # Author: Nick Sawyer <nick@nicksawyer.net>
 #
 # This script allows developers to easily open the web view of files and directories
@@ -153,12 +153,17 @@ fi
 TARGET="${TARGET%/}"
 
 # If we haven't set a target branch or tag reference, use the current one if possible
-if [[ -e $CONF ]]; then
-    if [[ $REF == "" ]]; then
-        REF=$(__git_ps1 '%s' | tr -d '()')
+if [[ $GIT_COMPLETION != "" ]]; then
+    if [[ -e $GIT_COMPLETION ]]; then
+        source $GIT_COMPLETION
+        if [[ $REF == "" ]]; then
+            REF=$(__git_ps1 '%s' | tr -d '()')
+        fi
+    else
+        echo "Warning: \"$GIT_COMPLETION\" does not exist; unable to determine current head reference"
     fi
 else
-    echo "Warning: \"$CONF\" does not exist; unable to determine current head reference"
+    echo "Warning: No Git completion path set; this is required for automatic head reference detection"
 fi
 
 # Build the final URL for the proper service
