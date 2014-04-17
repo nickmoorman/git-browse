@@ -40,6 +40,12 @@ if [[ -e $CONF ]]; then
     source $CONF
 fi
 
+# Stash hostname info for tests
+if [[ $TEST_STASH_HOSTNAME != "" ]]; then
+    STASH_HOSTNAME=$TEST_STASH_HOSTNAME
+    STASH_URL_ROOT=$TEST_STASH_URL_ROOT
+fi
+
 # Make sure we're in a Git repository, and get the origin remote URL
 ORIGIN=$(git remote -v 2>/dev/null | grep -m 1 origin | awk '{print $2}')
 if [[ $ORIGIN == "" ]]; then
