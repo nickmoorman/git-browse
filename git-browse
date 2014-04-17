@@ -1,0 +1,151 @@
+#!/bin/bash
+#
+# git-browse, v1.0.0
+# Author: Nick Sawyer <nick@nicksawyer.net>
+#
+# This script allows developers to easily open files and directories
+# from their local projects in Stash, making it a breeze to share
+# code with co-workers.  See "showUsage" function for invocation
+# details.
+#
+###############################################################################
+
+function showUsage {
+    echo
+    echo "USAGE: git-browse [--url-only] [--ref=<head-reference>] [ [--commits] | [<path>] [--line=<line>] ]"
+    echo
+    echo "Running the script with no arguments will open the current directory in Stash"
+    echo "at the currently checked out branch/tag/commit.  You can use the '--ref' argument"
+    echo "to specify the branch/tag/commit of your choice if you don't want to use the"
+    echo "current one."
+    echo
+    echo "You can optionally pass in any ONE of the following:"
+    echo "    A specific commit hash to show in Stash"
+    echo "    The relative path to a file or a directory in the repository to go to directly"
+    echo "    The '--commits' flag, which switches to Stash's commit listing mode"
+    echo
+    echo "Note: If you're passing a file path and you want to point to a particular line"
+    echo "in the file, use the '--line' argument."
+    echo
+    echo "Using the '--url-only' flag will execute the script the same way, but only"
+    echo "display the Stash URL without opening it in your browser."
+    echo
+
+    exit 1
+}
+
+# Load config file if it exists
+CONF="$HOME/.gitbrowse"
+if [[ -e $CONF ]]; then
+    source $CONF
+fi
+
+# Make sure we're in a Git repository, and get the origin remote URL
+ORIGIN=$(git remote -v 2>/dev/null | grep -m 1 origin | awk '{print $2}')
+if [[ $ORIGIN == "" ]]; then
+    # Abort if this isn't a Git repository
+    echo "Not a Git repository; aborting"
+    exit 65
+elif [[ $ORIGIN != *$STASH_HOSTNAME* ]]; then
+    # Abort if the repository is not tracked in Stash
+    echo "This repository is not tracked in Stash; aborting"
+    exit 65
+elif [[ $ORIGIN == ssh* ]]; then
+    # Handle SSH format (ssh://git@stash.mycompany.com:8080/PROJ/repository.git)
+    PROJECT=$(echo $ORIGIN | awk -F\/ '{print $4}')
+    REPO=$(echo $ORIGIN | awk -F\/ '{print $5}' | awk -F. '{print $1}')
+elif [[ $ORIGIN == https* ]]; then
+    # Handle HTTPS format (https://username@stash.mycompany.com/stash/scm/proj/repository.git)
+    PROJECT=$(echo $ORIGIN | awk -F\/ '{print $6}')
+    REPO=$(echo $ORIGIN | awk -F\/ '{print $7}' | awk -F. '{print $1}')
+else
+    echo "Unable to handle origin URL '$ORIGIN'; aborting"
+    exit 65
+fi
+
+# Default to "browse" mode in Stash
+MODE="browse"
+# Default to opening the URL in a browser
+URL_ONLY=false
+
+# Parse command line arguments
+for arg in "$@"; do
+    case $arg in
+        --commits)
+        MODE="commits"
+        shift
+        ;;
+        --url-only)
+        URL_ONLY=true
+        shift
+        ;;
+        --ref=*)
+        REF="?at=${arg#*=}"
+        shift
+        ;;
+        --line=*)
+        LINE="#${arg#*=}"
+        shift
+        ;;
+        --help)
+        showUsage
+        ;;
+        *)
+        # Assume that this is a commit hash reference, or the relative path to
+        # a file or directory; we'll verify after the arg loop
+        TARGET=$arg
+        shift
+        ;;
+    esac
+done
+
+# Verify target arg
+if [[ $TARGET != "" ]]; then
+    if [[ $TARGET =~ ^[0-9a-f]+$ ]]; then
+        MODE="commits"
+        TARGET="/$TARGET"
+    else
+        if [[ -e $TARGET ]]; then
+            TARGET_PATH=$TARGET
+            TARGET="/${TARGET%/}"
+        else
+            echo "Invalid input; please try again"
+            showUsage
+        fi
+    fi
+fi
+
+# Only allow line number if the target is a file
+if [[ $LINE != "" && ! -f $TARGET_PATH ]]; then
+    echo "Line number only supported for files; aborting"
+    exit 64
+fi
+
+# If we haven't set a target branch or tag reference, use the current one if possible
+if [[ -e $CONF ]]; then
+    if [[ $REF == "" ]]; then
+        R=$(__git_ps1 '%s' | tr -d '()')
+        if [[ $R != "master" ]]; then
+            REF="?at=$R"
+        fi
+    fi
+else
+    echo "Warning: \"$CONF\" does not exist; unable to determine current head reference"
+fi
+
+# If we're using browse mode and we're in a sub-directory, add the relative path
+if [[ $MODE == "browse" ]]; then
+    RPATH=$(git rev-parse --show-prefix)
+    if [[ $RPATH != "" ]]; then
+        TARGET="/${RPATH%/}$TARGET"
+    fi
+fi
+
+STASH_URL="$STASH_URL_ROOT/projects/$PROJECT/repos/$REPO/$MODE$TARGET$REF$LINE"
+
+if [[ $URL_ONLY == true ]]; then
+    echo $STASH_URL
+else
+    echo "Opening '$STASH_URL'..."
+    open $STASH_URL
+fi
