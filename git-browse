@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# git-browse, v0.1.0
+# git-browse, v0.1.1
 # Author: Nick Sawyer <nick@nicksawyer.net>
 #
 # This script allows developers to easily open the web view of files and directories
@@ -34,13 +34,20 @@ function showUsage {
     exit 1
 }
 
+# Default to opening the URL in a browser
+URL_ONLY=false
+# Internal variable to keep track of mode; can be "browse" or "commits"
+_MODE="browse"
+# Internal variable to keep track of the type of target set; can be "empty", "commit", "file", or "directory"
+_TARGET_TYPE="empty"
+
 # Load config file if it exists
 CONF="$HOME/.gitbrowse"
 if [[ -e $CONF ]]; then
     source $CONF
 fi
 
-# Stash hostname info for tests
+# Set Stash hostname info for tests
 if [[ $TEST_STASH_HOSTNAME != "" ]]; then
     STASH_HOSTNAME=$TEST_STASH_HOSTNAME
     STASH_URL_ROOT=$TEST_STASH_URL_ROOT
@@ -56,7 +63,6 @@ elif [[ $ORIGIN == *github.com* ]]; then
     REMOTE_SERVICE="github"
 elif [[ $ORIGIN == *$STASH_HOSTNAME* ]]; then
     REMOTE_SERVICE="stash"
-    MODE="browse"
 else
     echo "Unable to handle origin URL '$ORIGIN'; aborting"
     exit 65
@@ -76,14 +82,11 @@ else
     exit 65
 fi
 
-# Default to opening the URL in a browser
-URL_ONLY=false
-
 # Parse command line arguments
 for arg in "$@"; do
     case $arg in
         --commits)
-        MODE="commits"
+        _MODE="commits"
         shift
         ;;
         --url-only)
@@ -91,25 +94,11 @@ for arg in "$@"; do
         shift
         ;;
         --ref=*)
-        case $REMOTE_SERVICE in
-            stash)
-            REF="?at=${arg#*=}"
-            ;;
-            *)
-            REF="${arg#*=}"
-            ;;
-        esac
+        REF="${arg#*=}"
         shift
         ;;
         --line=*)
-        case $REMOTE_SERVICE in
-            stash)
-            LINE="#${arg#*=}"
-            ;;
-            *)
-            LINE="#L${arg#*=}"
-            ;;
-        esac
+        LINE="${arg#*=}"
         shift
         ;;
         --help)
@@ -127,35 +116,15 @@ done
 # Verify target arg
 if [[ $TARGET != "" ]]; then
     if [[ $TARGET =~ ^[0-9a-f]+$ ]]; then
-        case $REMOTE_SERVICE in
-            stash)
-            MODE="commits"
-            ;;
-            *)
-            MODE="commit"
-            ;;
-        esac
-        TARGET="/$TARGET"
+        _MODE="commits"
+        _TARGET_TYPE="commit"
     else
         if [[ -e $TARGET ]]; then
-            # Only allow line number if the target is a file
-            if [[ $LINE != "" && ! -f $TARGET ]]; then
-                echo "Line number only supported for files; aborting"
-                exit 64
+            if [[ -f $TARGET ]]; then
+                _TARGET_TYPE="file"
+            else
+                _TARGET_TYPE="directory"
             fi
-            case $REMOTE_SERVICE in
-                stash)
-                MODE="browse"
-                ;;
-                *)
-                if [[ -f $TARGET ]]; then
-                    MODE="blob"
-                else
-                    MODE="tree"
-                fi
-                ;;
-            esac
-            TARGET="/${TARGET%/}"
         else
             echo "Invalid input; please try again"
             showUsage
@@ -163,58 +132,89 @@ if [[ $TARGET != "" ]]; then
     fi
 fi
 
-# Fix the case for the repository root on GitHub with a passed-in target
-if [[ $REMOTE_SERVICE == "github" && $MODE = "" && $REF != "" && $TARGET == "" ]]; then
-    MODE="tree"
+# Only allow line number if the target is a file
+if [[ $LINE != "" && $_TARGET_TYPE != "file" ]]; then
+    echo "Line number only supported for files; aborting"
+    exit 64
 fi
 
 # If we're using browse mode and we're in a sub-directory, add the relative path
-if [[ $MODE == "browse" || $MODE = "" || $MODE == "tree" || $MODE == "blob" ]]; then
+if [[ $_MODE == "browse" ]]; then
     RPATH=$(git rev-parse --show-prefix)
     if [[ $RPATH != "" ]]; then
-        TARGET="/${RPATH%/}$TARGET"
-        if [[ $MODE = "" ]]; then
-            MODE="tree"
+        TARGET="$RPATH$TARGET"
+        if [[ $_TARGET_TYPE == "empty" ]]; then
+            _TARGET_TYPE="directory"
         fi
     fi
 fi
 
+# Trim trailing slash if there is one
+TARGET="${TARGET%/}"
+
 # If we haven't set a target branch or tag reference, use the current one if possible
 if [[ -e $CONF ]]; then
     if [[ $REF == "" ]]; then
-        R=$(__git_ps1 '%s' | tr -d '()')
-        case $REMOTE_SERVICE in
-            github)
-            # Only set the ref if we're not looking at the root of the repository, or a single commit
-            if [[ ( ! $MODE == "commit" && ! ( $MODE == "" && $TARGET == "" ) ) || ( $MODE == "" && $TARGET == "" && $R != "master") ]]; then
-                REF=$R
-            fi
-            ;;
-            stash)
-            # Only set the ref if we're on a branch other than master
-            if [[ $R != "master" ]]; then
-                REF="?at=$R"
-            fi
-            ;;
-        esac
+        REF=$(__git_ps1 '%s' | tr -d '()')
     fi
 else
     echo "Warning: \"$CONF\" does not exist; unable to determine current head reference"
 fi
 
+# Build the final URL for the proper service
 case $REMOTE_SERVICE in
     github)
-    if [[ $MODE != "" ]]; then
-        MODE="/$MODE"
+    if [[ $_MODE == "browse" ]]; then
+        case $_TARGET_TYPE in
+            empty)
+            if [[ $REF == "master" ]]; then
+                REF=""
+            fi
+            if [[ $REF != "" ]]; then
+                MODE="/tree"
+            fi
+            ;;
+            file)
+            MODE="/blob"
+            ;;
+            directory)
+            MODE="/tree"
+            ;;
+        esac
+    else
+        if [[ $_TARGET_TYPE == "commit" ]]; then
+            MODE="/commit"
+            REF=""
+        else
+            MODE="/commits"
+        fi
     fi
     if [[ $REF != "" ]]; then
         REF="/$REF"
+    fi
+    if [[ $TARGET != "" ]]; then
+        TARGET="/$TARGET"
+    fi
+    if [[ $LINE != "" ]]; then
+        LINE="#L$LINE"
     fi
     URL="https://github.com/$GROUP/$REPO$MODE$REF$TARGET$LINE"
     ;;
     stash)
     GROUP=$(echo $GROUP | tr [:lower:] [:upper:])
-    URL="$STASH_URL_ROOT/projects/$GROUP/repos/$REPO/$MODE$TARGET$REF$LINE"
+    if [[ $TARGET != "" ]]; then
+        TARGET="/$TARGET"
+    fi
+    if [[ $REF == "master" ]]; then
+        REF=""
+    fi
+    if [[ $REF != "" ]]; then
+        REF="?at=$REF"
+    fi
+    if [[ $LINE != "" ]]; then
+        LINE="#$LINE"
+    fi
+    URL="$STASH_URL_ROOT/projects/$GROUP/repos/$REPO/$_MODE$TARGET$REF$LINE"
     ;;
 esac
 
