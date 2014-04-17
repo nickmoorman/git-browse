@@ -1,12 +1,12 @@
 #!/bin/bash
 #
-# git-browse, v1.0.0
+# git-browse, v0.1.0
 # Author: Nick Sawyer <nick@nicksawyer.net>
 #
-# This script allows developers to easily open files and directories
-# from their local projects in Stash, making it a breeze to share
-# code with co-workers.  See "showUsage" function for invocation
-# details.
+# This script allows developers to easily open the web view of files and directories
+# from their local Git repositories in a browser, making it a breeze to share code
+# with co-workers.  The script currently supports GitHub and custom Stash installs.
+# See "showUsage" function for invocation details.
 #
 ###############################################################################
 
@@ -14,21 +14,21 @@ function showUsage {
     echo
     echo "USAGE: git-browse [--url-only] [--ref=<head-reference>] [ [--commits] | [<path>] [--line=<line>] ]"
     echo
-    echo "Running the script with no arguments will open the current directory in Stash"
-    echo "at the currently checked out branch/tag/commit.  You can use the '--ref' argument"
-    echo "to specify the branch/tag/commit of your choice if you don't want to use the"
-    echo "current one."
+    echo "Running the script with no arguments will open the web view of the current"
+    echo "directory in your browser at the currently checked out branch/tag/commit."
+    echo "You can use the '--ref' argument to specify the branch/tag/commit of your"
+    echo "choice if you don't want to use the current one."
     echo
     echo "You can optionally pass in any ONE of the following:"
-    echo "    A specific commit hash to show in Stash"
+    echo "    A specific commit hash to show"
     echo "    The relative path to a file or a directory in the repository to go to directly"
-    echo "    The '--commits' flag, which switches to Stash's commit listing mode"
+    echo "    The '--commits' flag, which switches to commit listing mode"
     echo
     echo "Note: If you're passing a file path and you want to point to a particular line"
     echo "in the file, use the '--line' argument."
     echo
     echo "Using the '--url-only' flag will execute the script the same way, but only"
-    echo "display the Stash URL without opening it in your browser."
+    echo "display the URL without opening it in your browser."
     echo
 
     exit 1
@@ -52,25 +52,30 @@ if [[ $ORIGIN == "" ]]; then
     # Abort if this isn't a Git repository
     echo "Not a Git repository; aborting"
     exit 65
-elif [[ $ORIGIN != *$STASH_HOSTNAME* ]]; then
-    # Abort if the repository is not tracked in Stash
-    echo "This repository is not tracked in Stash; aborting"
-    exit 65
-elif [[ $ORIGIN == ssh* ]]; then
-    # Handle SSH format (ssh://git@stash.mycompany.com:8080/PROJ/repository.git)
-    PROJECT=$(echo $ORIGIN | awk -F\/ '{print $4}')
-    REPO=$(echo $ORIGIN | awk -F\/ '{print $5}' | awk -F. '{print $1}')
-elif [[ $ORIGIN == https* ]]; then
-    # Handle HTTPS format (https://username@stash.mycompany.com/stash/scm/proj/repository.git)
-    PROJECT=$(echo $ORIGIN | awk -F\/ '{print $6}')
-    REPO=$(echo $ORIGIN | awk -F\/ '{print $7}' | awk -F. '{print $1}')
+elif [[ $ORIGIN == *github.com* ]]; then
+    REMOTE_SERVICE="github"
+elif [[ $ORIGIN == *$STASH_HOSTNAME* ]]; then
+    REMOTE_SERVICE="stash"
+    MODE="browse"
 else
     echo "Unable to handle origin URL '$ORIGIN'; aborting"
     exit 65
 fi
 
-# Default to "browse" mode in Stash
-MODE="browse"
+# Parse the origin URL to get the parts we need
+# We can handle the following formats:
+#     git@github.com:symfony/symfony.git
+#     https://github.com/symfony/symfony.git
+#     ssh://git@stash.mycompany.com:8080/PROJ/repository.git
+#     https://username@stash.mycompany.com/stash/scm/proj/repository.git
+if [[ $ORIGIN =~ .*[:\/]{1}([A-Za-z]+)\/([A-Za-z]+).git$ ]]; then
+    GROUP=${BASH_REMATCH[1]}
+    REPO=${BASH_REMATCH[2]}
+else
+    echo "Unable to handle origin URL '$ORIGIN'; aborting"
+    exit 65
+fi
+
 # Default to opening the URL in a browser
 URL_ONLY=false
 
@@ -86,11 +91,25 @@ for arg in "$@"; do
         shift
         ;;
         --ref=*)
-        REF="?at=${arg#*=}"
+        case $REMOTE_SERVICE in
+            stash)
+            REF="?at=${arg#*=}"
+            ;;
+            *)
+            REF="${arg#*=}"
+            ;;
+        esac
         shift
         ;;
         --line=*)
-        LINE="#${arg#*=}"
+        case $REMOTE_SERVICE in
+            stash)
+            LINE="#${arg#*=}"
+            ;;
+            *)
+            LINE="#L${arg#*=}"
+            ;;
+        esac
         shift
         ;;
         --help)
@@ -108,11 +127,34 @@ done
 # Verify target arg
 if [[ $TARGET != "" ]]; then
     if [[ $TARGET =~ ^[0-9a-f]+$ ]]; then
-        MODE="commits"
+        case $REMOTE_SERVICE in
+            stash)
+            MODE="commits"
+            ;;
+            *)
+            MODE="commit"
+            ;;
+        esac
         TARGET="/$TARGET"
     else
         if [[ -e $TARGET ]]; then
-            TARGET_PATH=$TARGET
+            # Only allow line number if the target is a file
+            if [[ $LINE != "" && ! -f $TARGET ]]; then
+                echo "Line number only supported for files; aborting"
+                exit 64
+            fi
+            case $REMOTE_SERVICE in
+                stash)
+                MODE="browse"
+                ;;
+                *)
+                if [[ -f $TARGET ]]; then
+                    MODE="blob"
+                else
+                    MODE="tree"
+                fi
+                ;;
+            esac
             TARGET="/${TARGET%/}"
         else
             echo "Invalid input; please try again"
@@ -121,37 +163,64 @@ if [[ $TARGET != "" ]]; then
     fi
 fi
 
-# Only allow line number if the target is a file
-if [[ $LINE != "" && ! -f $TARGET_PATH ]]; then
-    echo "Line number only supported for files; aborting"
-    exit 64
+# Fix the case for the repository root on GitHub with a passed-in target
+if [[ $REMOTE_SERVICE == "github" && $MODE = "" && $REF != "" && $TARGET == "" ]]; then
+    MODE="tree"
+fi
+
+# If we're using browse mode and we're in a sub-directory, add the relative path
+if [[ $MODE == "browse" || $MODE = "" || $MODE == "tree" || $MODE == "blob" ]]; then
+    RPATH=$(git rev-parse --show-prefix)
+    if [[ $RPATH != "" ]]; then
+        TARGET="/${RPATH%/}$TARGET"
+        if [[ $MODE = "" ]]; then
+            MODE="tree"
+        fi
+    fi
 fi
 
 # If we haven't set a target branch or tag reference, use the current one if possible
 if [[ -e $CONF ]]; then
     if [[ $REF == "" ]]; then
         R=$(__git_ps1 '%s' | tr -d '()')
-        if [[ $R != "master" ]]; then
-            REF="?at=$R"
-        fi
+        case $REMOTE_SERVICE in
+            github)
+            # Only set the ref if we're not looking at the root of the repository, or a single commit
+            if [[ ( ! $MODE == "commit" && ! ( $MODE == "" && $TARGET == "" ) ) || ( $MODE == "" && $TARGET == "" && $R != "master") ]]; then
+                REF=$R
+            fi
+            ;;
+            stash)
+            # Only set the ref if we're on a branch other than master
+            if [[ $R != "master" ]]; then
+                REF="?at=$R"
+            fi
+            ;;
+        esac
     fi
 else
     echo "Warning: \"$CONF\" does not exist; unable to determine current head reference"
 fi
 
-# If we're using browse mode and we're in a sub-directory, add the relative path
-if [[ $MODE == "browse" ]]; then
-    RPATH=$(git rev-parse --show-prefix)
-    if [[ $RPATH != "" ]]; then
-        TARGET="/${RPATH%/}$TARGET"
+case $REMOTE_SERVICE in
+    github)
+    if [[ $MODE != "" ]]; then
+        MODE="/$MODE"
     fi
-fi
-
-STASH_URL="$STASH_URL_ROOT/projects/$PROJECT/repos/$REPO/$MODE$TARGET$REF$LINE"
+    if [[ $REF != "" ]]; then
+        REF="/$REF"
+    fi
+    URL="https://github.com/$GROUP/$REPO$MODE$REF$TARGET$LINE"
+    ;;
+    stash)
+    GROUP=$(echo $GROUP | tr [:lower:] [:upper:])
+    URL="$STASH_URL_ROOT/projects/$GROUP/repos/$REPO/$MODE$TARGET$REF$LINE"
+    ;;
+esac
 
 if [[ $URL_ONLY == true ]]; then
-    echo $STASH_URL
+    echo $URL
 else
-    echo "Opening '$STASH_URL'..."
-    open $STASH_URL
+    echo "Opening '$URL'..."
+    open $URL
 fi
