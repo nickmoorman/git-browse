@@ -8,8 +8,8 @@ import os
 import subprocess
 
 # Set some variables in the environment for building Stash URLs
-os.environ["TEST_STASH_HOSTNAME"] = "stash.mycompany.com"
 os.environ["TEST_STASH_URL_ROOT"] = "https://stash.mycompany.com"
+os.environ["TEST_GITLAB_URL_ROOT"] = "https://gitlab.myorg.com"
 
 # Define the different argument combinations to test
 test_definitions = {
@@ -149,6 +149,100 @@ test_groups = [
             {
                 "expectations": {
                     "default": "",
+                    "filename": "/blob/master/foo/bar/baz.ext",
+                    "filename-ref": "/blob/test1/foo/bar/baz.ext"
+                }
+            }
+        ]
+    },
+    {
+        "name": "GitLab tests (SSH remote)",
+        "setup": "cd testrepo; git remote set-url origin git@gitlab.com:user/repo.git; git checkout master",
+        "expected_base": "https://gitlab.com/user/repo",
+        "command_base": "git-browse --url-only ",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "/tree/master",
+                    "filename": "/blob/master/foo/bar/baz.ext",
+                    "filename-ref": "/blob/test1/foo/bar/baz.ext",
+                    "ref-filename": "/blob/test1/foo/bar/baz.ext",
+                    "filename-line": "/blob/master/foo/bar/baz.ext#L25",
+                    "filename-ref-line": "/blob/test1/foo/bar/baz.ext#L25",
+                    "commit": "/commit/a78cd8e",
+                    "commits": "/commits/master",
+                    "ref": "/tree/test1",
+                    "commits-ref": "/commits/test1",
+                    "ref-commits": "/commits/test1"
+                }
+            },
+            {
+                "filename": "baz.ext",
+                "prefix-command": "cd foo/bar",
+                "expectations": {
+                    "default": "/tree/master/foo/bar",
+                    "filename": "/blob/master/foo/bar/baz.ext",
+                    "filename-ref": "/blob/test1/foo/bar/baz.ext",
+                    "ref-filename": "/blob/test1/foo/bar/baz.ext",
+                    "filename-line": "/blob/master/foo/bar/baz.ext#L25",
+                    "filename-ref-line": "/blob/test1/foo/bar/baz.ext#L25",
+                    "commit": "/commit/a78cd8e",
+                    "commits": "/commits/master",
+                    "ref": "/tree/test1/foo/bar",
+                    "commits-ref": "/commits/test1",
+                    "ref-commits": "/commits/test1"
+                }
+            },
+            {
+                "before": "git checkout test2",
+                "expectations": {
+                    "filename": "/blob/test2/foo/bar/baz.ext",
+                    "filename-line": "/blob/test2/foo/bar/baz.ext#L25",
+                    "commit": "/commit/a78cd8e",
+                    "commits": "/commits/test2"
+                }
+            }
+        ]
+    },
+    {
+        "name": "GitLab tests (HTTPS remote)",
+        "setup": "cd testrepo; git remote set-url origin https://gitlab.com/user/repo.git; git checkout master",
+        "expected_base": "https://gitlab.com/user/repo",
+        "command_base": "git-browse --url-only ",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "/tree/master",
+                    "filename": "/blob/master/foo/bar/baz.ext",
+                    "filename-ref": "/blob/test1/foo/bar/baz.ext"
+                }
+            }
+        ]
+    },
+    {
+        "name": "GitLab tests (SSH remote, custom domain)",
+        "setup": "cd testrepo; git remote set-url origin git@gitlab.myorg.com/user/repo.git; git checkout master",
+        "expected_base": "https://gitlab.myorg.com/user/repo",
+        "command_base": "git-browse --url-only ",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "/tree/master",
+                    "filename": "/blob/master/foo/bar/baz.ext",
+                    "filename-ref": "/blob/test1/foo/bar/baz.ext"
+                }
+            }
+        ]
+    },
+    {
+        "name": "GitLab tests (HTTPS remote, custom domain)",
+        "setup": "cd testrepo; git remote set-url origin https://gitlab.myorg.com/user/repo.git; git checkout master",
+        "expected_base": "https://gitlab.myorg.com/user/repo",
+        "command_base": "git-browse --url-only ",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "/tree/master",
                     "filename": "/blob/master/foo/bar/baz.ext",
                     "filename-ref": "/blob/test1/foo/bar/baz.ext"
                 }

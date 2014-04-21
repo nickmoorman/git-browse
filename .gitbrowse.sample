@@ -1,16 +1,10 @@
 #!/bin/bash
 
-# Root hostname to your Stash install
-# export STASH_HOSTNAME=""
-# The root of the URL where you browse Stash
+# The root of the URL where you browse Stash (i.e. https://stash.mycompany.com)
 # export STASH_URL_ROOT=""
 
-# A couple examples of the two above settings:
-# STASH_HOSTNAME="stash.mycompany.com"
-# STASH_URL_ROOT="https://$STASH_HOSTNAME"
-# or
-# STASH_HOSTNAME="internal.mycompany.com"
-# STASH_URL_ROOT="https://$STASH_HOSTNAME/stash"
+# The root of the URL where you browse GitLab (i.e. https://gitlab.myorg.com)
+# export GITLAB_URL_ROOT=""
 
 # Path to Git completion bash script
 # (https://github.com/git/git/blob/master/contrib/completion/git-completion.bash)

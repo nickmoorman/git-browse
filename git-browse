@@ -47,10 +47,10 @@ if [[ -e $CONF ]]; then
     source $CONF
 fi
 
-# Set Stash hostname info for tests
-if [[ $TEST_STASH_HOSTNAME != "" ]]; then
-    STASH_HOSTNAME=$TEST_STASH_HOSTNAME
+# Set URL roots for tests
+if [[ $TEST_STASH_URL_ROOT != "" ]]; then
     STASH_URL_ROOT=$TEST_STASH_URL_ROOT
+    GITLAB_URL_ROOT=$TEST_GITLAB_URL_ROOT
 fi
 
 # Make sure we're in a Git repository, and get the origin remote URL
@@ -59,22 +59,40 @@ if [[ $ORIGIN == "" ]]; then
     # Abort if this isn't a Git repository
     echo "Not a Git repository; aborting"
     exit 65
-elif [[ $ORIGIN == *github.com* ]]; then
-    REMOTE_SERVICE="github"
-elif [[ $STASH_HOSTNAME != "" && $ORIGIN == *$STASH_HOSTNAME* ]]; then
-    REMOTE_SERVICE="stash"
+elif [[ $ORIGIN =~ .*[@\/]{1}(([a-z0-9\-]+\.)+[a-z]+)[:\/]{1}.* ]]; then
+    ORIGIN_DOMAIN=${BASH_REMATCH[1]}
 else
-    echo "Unable to handle origin URL '$ORIGIN'; did you set the 'STASH_HOSTNAME' and 'STASH_URL_ROOT' settings in ~/.gitbrowse?"
+    echo "Unable to handle origin URL '$ORIGIN'; aborting"
+    exit 65
+fi
+
+# Try to determine which service to use (could be hosted on a custom domain)
+if [[ $ORIGIN_DOMAIN == "github.com" ]]; then
+    SERVICE="github"
+    URL_ROOT="https://github.com"
+elif [[ $STASH_URL_ROOT == *$ORIGIN_DOMAIN* ]]; then
+    SERVICE="stash"
+    URL_ROOT=$STASH_URL_ROOT
+elif [[ $ORIGIN_DOMAIN == "gitlab.com" ]]; then
+    SERVICE="gitlab"
+    URL_ROOT="https://gitlab.com"
+elif [[ $GITLAB_URL_ROOT == *$ORIGIN_DOMAIN* ]]; then
+    SERVICE="gitlab"
+    URL_ROOT=$GITLAB_URL_ROOT
+else
+    echo "Unable to handle origin URL '$ORIGIN'; did you set the proper custom URL root settings in ~/.gitbrowse?"
     exit 65
 fi
 
 # Parse the origin URL to get the parts we need
 # We can handle the following formats:
-#     git@github.com:symfony/symfony.git
-#     https://github.com/symfony/symfony.git
+#     git@(github|gitlab).com:user/repository.git
+#     https://(github|gitlab).com/user/repository.git
+#     git@gitlab.myorg.com:user/repository.git
+#     https://gitlab.myorg.com/user/repository.git
 #     ssh://git@stash.mycompany.com:8080/PROJ/repository.git
 #     https://username@stash.mycompany.com/stash/scm/proj/repository.git
-if [[ $ORIGIN =~ .*[:\/]{1}([A-Za-z0-9\-]+)\/([A-Za-z0-9\-]+).git$ ]]; then
+if [[ $ORIGIN =~ .*[:\/]{1}([^\/]+)\/([^\/]+).git$ ]]; then
     GROUP=${BASH_REMATCH[1]}
     REPO=${BASH_REMATCH[2]}
 else
@@ -172,12 +190,12 @@ if [[ $REF == "" ]]; then
 fi
 
 # Build the final URL for the proper service
-case $REMOTE_SERVICE in
-    github)
+case $SERVICE in
+    github|gitlab)
     if [[ $_MODE == "browse" ]]; then
         case $_TARGET_TYPE in
             empty)
-            if [[ $REF == "master" ]]; then
+            if [[ $SERVICE == "github" && $REF == "master" ]]; then
                 REF=""
             fi
             if [[ $REF != "" ]]; then
@@ -208,7 +226,7 @@ case $REMOTE_SERVICE in
     if [[ $LINE != "" ]]; then
         LINE="#L$LINE"
     fi
-    URL="https://github.com/$GROUP/$REPO$MODE$REF$TARGET$LINE"
+    URL="$URL_ROOT/$GROUP/$REPO$MODE$REF$TARGET$LINE"
     ;;
     stash)
     GROUP=$(echo $GROUP | tr [:lower:] [:upper:])
@@ -224,7 +242,7 @@ case $REMOTE_SERVICE in
     if [[ $LINE != "" ]]; then
         LINE="#$LINE"
     fi
-    URL="$STASH_URL_ROOT/projects/$GROUP/repos/$REPO/$_MODE$TARGET$REF$LINE"
+    URL="$URL_ROOT/projects/$GROUP/repos/$REPO/$_MODE$TARGET$REF$LINE"
     ;;
 esac
 
