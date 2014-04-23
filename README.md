@@ -6,11 +6,13 @@
 
 - [GitHub](https://github.com/)
 - [Atlassian Stash](https://www.atlassian.com/software/stash)
+- [GitLab](https://www.gitlab.com/)
+- [Gitorious](https://gitorious.org/)
 
 Future plans on the roadmap include:
 
 - Support for pull request URLs
-- Possible support for GitLab, Gitorious, and BitBucket
+- Possible support for Bitbucket
 
 ## Installation & Setup
 Currently, the easiest way to install this script on your machine is with Homebrew.
@@ -201,6 +203,7 @@ Opening 'https://github.com/someuser/somegithubrepo/blob/somebranch/foo/bar/baz.
 Please feel free to fork this repo and contribute to this script.  If contributing, please update the [unit tests](https://github.com/nickmoorman/git-browse/blob/master/test-git-browse.py) accordingly and make sure all tests pass.
 
 ## Changelog
+- v0.2.0 (2014-04-20) - Revamped tests; added support for GitLab and Gitorious
 - v0.1.4 (2014-04-17) - Fixed bug caused when no head reference found; added error checking to ensure Stash variables are set; added Homebrew instructions!
 - v0.1.3 (2014-04-17) - Fixed silly bug with GitHub URLs
 - v0.1.2 (2014-04-17) - Improved handling of Git completion script

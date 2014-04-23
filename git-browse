@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# git-browse, v0.1.4
+# git-browse, v0.2.0
 # Author: Nick Sawyer <nick@nicksawyer.net>
 #
 # This script allows developers to easily open the web view of files and directories
