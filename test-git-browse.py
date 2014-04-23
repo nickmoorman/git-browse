@@ -29,7 +29,7 @@ test_definitions = {
 # Define groups of tests; each group tests a different type of repository
 test_groups = [
     {
-        "name": "Stash tests (SSH remote)",
+        "name": "Stash tests (SSH protocol)",
         "expected_base": "https://stash.mycompany.com/projects/PROJ/repos/repo",
         "command_base": "git-browse --url-only ",
         "tests": [
@@ -77,7 +77,7 @@ test_groups = [
         ]
     },
     {
-        "name": "Stash tests (HTTPS remote)",
+        "name": "Stash tests (HTTPS protocol)",
         "setup": "cd testrepo; git remote set-url origin https://someuser@stash.mycompany.com/scm/proj/repo.git; git checkout master",
         "expected_base": "https://stash.mycompany.com/projects/PROJ/repos/repo",
         "command_base": "git-browse --url-only ",
@@ -92,7 +92,7 @@ test_groups = [
         ]
     },
     {
-        "name": "GitHub tests (SSH remote)",
+        "name": "GitHub tests (SSH protocol)",
         "setup": "cd testrepo; git remote set-url origin git@github.com:user/repo.git; git checkout master",
         "expected_base": "https://github.com/user/repo",
         "command_base": "git-browse --url-only ",
@@ -141,7 +141,7 @@ test_groups = [
         ]
     },
     {
-        "name": "GitHub tests (HTTPS remote)",
+        "name": "GitHub tests (HTTPS protocol)",
         "setup": "cd testrepo; git remote set-url origin https://github.com/user/repo.git; git checkout master",
         "expected_base": "https://github.com/user/repo",
         "command_base": "git-browse --url-only ",
@@ -156,7 +156,7 @@ test_groups = [
         ]
     },
     {
-        "name": "GitLab tests (SSH remote)",
+        "name": "GitLab tests (SSH protocol)",
         "setup": "cd testrepo; git remote set-url origin git@gitlab.com:user/repo.git; git checkout master",
         "expected_base": "https://gitlab.com/user/repo",
         "command_base": "git-browse --url-only ",
@@ -205,7 +205,7 @@ test_groups = [
         ]
     },
     {
-        "name": "GitLab tests (HTTPS remote)",
+        "name": "GitLab tests (HTTPS protocol)",
         "setup": "cd testrepo; git remote set-url origin https://gitlab.com/user/repo.git; git checkout master",
         "expected_base": "https://gitlab.com/user/repo",
         "command_base": "git-browse --url-only ",
@@ -220,7 +220,7 @@ test_groups = [
         ]
     },
     {
-        "name": "GitLab tests (SSH remote, custom domain)",
+        "name": "GitLab tests (SSH protocol, custom domain)",
         "setup": "cd testrepo; git remote set-url origin git@gitlab.myorg.com/user/repo.git; git checkout master",
         "expected_base": "https://gitlab.myorg.com/user/repo",
         "command_base": "git-browse --url-only ",
@@ -235,7 +235,7 @@ test_groups = [
         ]
     },
     {
-        "name": "GitLab tests (HTTPS remote, custom domain)",
+        "name": "GitLab tests (HTTPS protocol, custom domain)",
         "setup": "cd testrepo; git remote set-url origin https://gitlab.myorg.com/user/repo.git; git checkout master",
         "expected_base": "https://gitlab.myorg.com/user/repo",
         "command_base": "git-browse --url-only ",
@@ -245,6 +245,85 @@ test_groups = [
                     "default": "/tree/master",
                     "filename": "/blob/master/foo/bar/baz.ext",
                     "filename-ref": "/blob/test1/foo/bar/baz.ext"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Gitorious tests (SSH protocol)",
+        "setup": "cd testrepo; git remote set-url origin git@gitorious.org:project/repo.git; git checkout master",
+        "expected_base": "https://gitorious.org/project/repo",
+        "command_base": "git-browse --url-only ",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "",
+                    "filename": "/source/master:foo/bar/baz.ext",
+                    "filename-ref": "/source/test1:foo/bar/baz.ext",
+                    "ref-filename": "/source/test1:foo/bar/baz.ext",
+                    "filename-line": "/source/master:foo/bar/baz.ext#L25",
+                    "filename-ref-line": "/source/test1:foo/bar/baz.ext#L25",
+                    "commit": "/commit/a78cd8e",
+                    "commits": "/commits/master",
+                    "ref": "/source/test1",
+                    "commits-ref": "/commits/test1",
+                    "ref-commits": "/commits/test1"
+                }
+            },
+            {
+                "filename": "baz.ext",
+                "prefix-command": "cd foo/bar",
+                "expectations": {
+                    "default": "/source/master:foo/bar",
+                    "filename": "/source/master:foo/bar/baz.ext",
+                    "filename-ref": "/source/test1:foo/bar/baz.ext",
+                    "ref-filename": "/source/test1:foo/bar/baz.ext",
+                    "filename-line": "/source/master:foo/bar/baz.ext#L25",
+                    "filename-ref-line": "/source/test1:foo/bar/baz.ext#L25",
+                    "commit": "/commit/a78cd8e",
+                    "commits": "/commits/master",
+                    "ref": "/source/test1:foo/bar",
+                    "commits-ref": "/commits/test1",
+                    "ref-commits": "/commits/test1"
+                }
+            },
+            {
+                "before": "git checkout test2",
+                "expectations": {
+                    "filename": "/source/test2:foo/bar/baz.ext",
+                    "filename-line": "/source/test2:foo/bar/baz.ext#L25",
+                    "commit": "/commit/a78cd8e",
+                    "commits": "/commits/test2"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Gitorious tests (HTTPS protocol)",
+        "setup": "cd testrepo; git remote set-url origin https://git.gitorious.org/project/repo.git; git checkout master",
+        "expected_base": "https://gitorious.org/project/repo",
+        "command_base": "git-browse --url-only ",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "",
+                    "filename": "/source/master:foo/bar/baz.ext",
+                    "filename-ref": "/source/test1:foo/bar/baz.ext"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Gitorious tests (Git protocol)",
+        "setup": "cd testrepo; git remote set-url origin git://gitorious.org/project/repo.git; git checkout master",
+        "expected_base": "https://gitorious.org/project/repo",
+        "command_base": "git-browse --url-only ",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "",
+                    "filename": "/source/master:foo/bar/baz.ext",
+                    "filename-ref": "/source/test1:foo/bar/baz.ext"
                 }
             }
         ]

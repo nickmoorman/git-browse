@@ -79,6 +79,9 @@ elif [[ $ORIGIN_DOMAIN == "gitlab.com" ]]; then
 elif [[ $GITLAB_URL_ROOT == *$ORIGIN_DOMAIN* ]]; then
     SERVICE="gitlab"
     URL_ROOT=$GITLAB_URL_ROOT
+elif [[ $ORIGIN_DOMAIN == "gitorious.org" || $ORIGIN_DOMAIN == "git.gitorious.org" ]]; then
+    SERVICE="gitorious"
+    URL_ROOT="https://gitorious.org"
 else
     echo "Unable to handle origin URL '$ORIGIN'; did you set the proper custom URL root settings in ~/.gitbrowse?"
     exit 65
@@ -92,6 +95,9 @@ fi
 #     https://gitlab.myorg.com/user/repository.git
 #     ssh://git@stash.mycompany.com:8080/PROJ/repository.git
 #     https://username@stash.mycompany.com/stash/scm/proj/repository.git
+#     git@gitorious.org:project/repository.git
+#     https://git.gitorious.org/project/repository.git
+#     git://gitorious.org/project/repository.git
 if [[ $ORIGIN =~ .*[:\/]{1}([^\/]+)\/([^\/]+).git$ ]]; then
     GROUP=${BASH_REMATCH[1]}
     REPO=${BASH_REMATCH[2]}
@@ -243,6 +249,46 @@ case $SERVICE in
         LINE="#$LINE"
     fi
     URL="$URL_ROOT/projects/$GROUP/repos/$REPO/$_MODE$TARGET$REF$LINE"
+    ;;
+    gitorious)
+    if [[ $_MODE == "browse" ]]; then
+        case $_TARGET_TYPE in
+            empty)
+            if [[ $REF == "master" ]]; then
+                REF=""
+            fi
+            if [[ $REF != "" ]]; then
+                MODE="/source"
+            fi
+            ;;
+            *)
+            MODE="/source"
+            ;;
+        esac
+    else
+        if [[ $_TARGET_TYPE == "commit" ]]; then
+            MODE="/commit"
+            REF=""
+        elif [[ $_TARGET_TYPE == "empty" ]]; then
+            MODE="/commits"
+        else
+            MODE="/history"
+        fi
+    fi
+    if [[ $REF != "" ]]; then
+        REF="/$REF"
+    fi
+    if [[ $TARGET != "" ]]; then
+        if [[ $_TARGET_TYPE == "commit" ]]; then
+            TARGET="/$TARGET"
+        else
+            TARGET=":$TARGET"
+        fi
+    fi
+    if [[ $LINE != "" ]]; then
+        LINE="#L$LINE"
+    fi
+    URL="$URL_ROOT/$GROUP/$REPO$MODE$REF$TARGET$LINE"
     ;;
 esac
 
