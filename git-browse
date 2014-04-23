@@ -34,6 +34,8 @@ function showUsage {
     exit 1
 }
 
+_VERSION_NUMBER="0.2.0"
+
 # Default to opening the URL in a browser
 URL_ONLY=false
 # Internal variable to keep track of mode; can be "browse" or "commits"
@@ -124,6 +126,10 @@ for arg in "$@"; do
         --line=*)
         LINE="${arg#*=}"
         shift
+        ;;
+        --version)
+        echo "git-browse, v$_VERSION_NUMBER"
+        exit
         ;;
         --help)
         showUsage
