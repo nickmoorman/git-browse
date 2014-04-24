@@ -87,18 +87,148 @@ error_tests = {
     "filename-raw-blame": 64
 }
 
+origins_and_bases = {
+    "stash": {
+        "default": "ssh-project",
+        "configs": {
+            "ssh-project": {
+                "origin": "ssh://git@stash.mycompany.com:8080/PROJ/repo.git",
+                "base": "https://stash.mycompany.com/projects/PROJ/repos/repo"
+            },
+            "ssh-user": {
+                "origin": "ssh://git@stash.mycompany.com:8080/~someuser/repo.git",
+                "base": "https://stash.mycompany.com/users/someuser/repos/repo"
+            },
+            "https-project-1": {
+                "origin": "https://someuser@stash.mycompany.com/scm/proj/repo.git",
+                "base": "https://stash.mycompany.com/projects/PROJ/repos/repo"
+            },
+            "https-user-1": {
+                "origin": "https://someuser@stash.mycompany.com/scm/~someuser/repo.git",
+                "base": "https://stash.mycompany.com/users/someuser/repos/repo"
+            },
+            "https-project-2": {
+                "origin": "https://someuser@my.company.com/stash/scm/proj/repo.git",
+                "base": "https://my.company.com/stash/projects/PROJ/repos/repo"
+            },
+            "https-user-2": {
+                "origin": "https://someuser@my.company.com/stash/scm/~someuser/repo.git",
+                "base": "https://my.company.com/stash/users/someuser/repos/repo"
+            }
+        }
+    },
+    "github": {
+        "default": "ssh",
+        "configs": {
+            "ssh": {
+                "origin": "git@github.com:user/repo.git",
+                "base": "https://github.com/user/repo"
+            },
+            "https": {
+                "origin": "https://github.com/user/repo.git",
+                "base": "https://github.com/user/repo"
+            },
+            "svn": {
+                "origin": "https://github.com/user/repo",
+                "base": "https://github.com/user/repo"
+            }
+        }
+    },
+    "gitlab": {
+        "default": "ssh",
+        "configs": {
+            "ssh": {
+                "origin": "git@gitlab.com:user/repo.git",
+                "base": "https://gitlab.com/user/repo"
+            },
+            "https": {
+                "origin": "https://gitlab.com/user/repo.git",
+                "base": "https://gitlab.com/user/repo"
+            },
+            "ssh-custom": {
+                "origin": "git@gitlab.myorg.com/user/repo.git",
+                "base": "https://gitlab.myorg.com/user/repo"
+            },
+            "https-custom": {
+                "origin": "https://gitlab.myorg.com/user/repo.git",
+                "base": "https://gitlab.myorg.com/user/repo"
+            }
+        }
+    },
+    "gitorious": {
+        "default": "ssh",
+        "configs": {
+            "ssh": {
+                "origin": "git@gitorious.org:project/repo.git",
+                "base": "https://gitorious.org/project/repo"
+            },
+            "https": {
+                "origin": "https://git.gitorious.org/project/repo.git",
+                "base": "https://gitorious.org/project/repo"
+            },
+            "git": {
+                "origin": "git://gitorious.org/project/repo",
+                "base": "https://gitorious.org/project/repo"
+            }
+        }
+    },
+    "bitbucket": {
+        "default": "ssh",
+        "configs": {
+            "ssh": {
+                "origin": "git@bitbucket.org:project/repo.git",
+                "base": "https://bitbucket.org/project/repo"
+            },
+            "https": {
+                "origin": "https://user@bitbucket.org/project/repo.git",
+                "base": "https://bitbucket.org/project/repo"
+            }
+        }
+    }
+}
+
 # Define groups of tests; each group tests a different type of repository
 test_groups = [
     {
-        "name": "Stash tests (SSH protocol, project repo)",
+        "name": "Origin URL tests",
+        "type": "origins",
+        "tests": {
+            "stash-ssh-project": "/browse",
+            "stash-ssh-user": "/browse",
+            "stash-https-project-1": "/browse",
+            "stash-https-user-1": "/browse",
+            "github-ssh": "",
+            "github-https": "",
+            "github-svn": "",
+            "gitlab-ssh": "/tree/master",
+            "gitlab-https": "/tree/master",
+            "gitlab-ssh-custom": "/tree/master",
+            "gitlab-https-custom": "/tree/master",
+            "gitorious-ssh": "",
+            "gitorious-https": "",
+            "gitorious-git": "",
+            "bitbucket-ssh": "/src",
+            "bitbucket-https": "/src"
+        }
+    },
+    {
+        "name": "Secondary Stash origin URL tests",
+        "type": "origins",
+        "env-setup": "os.putenv(\"TEST_STASH_URL_ROOT\", \"https://my.company.com/stash\")",
+        "tests": {
+            "stash-https-project-2": "/browse",
+            "stash-https-user-2": "/browse"
+        }
+    },
+    {
+        "name": "Stash tests",
         "type": "general",
-        "origin": "ssh://git@stash.mycompany.com:8080/PROJ/repo.git",
-        "expected_base": "https://stash.mycompany.com/projects/PROJ/repos/repo",
+        "service": "stash",
+        "env-setup": "os.putenv(\"TEST_STASH_URL_ROOT\", \"https://stash.mycompany.com\")",
         "tests": [
             {
                 "run-error-tests": True,
                 "expectations": {
-                    "default": "/browse",
                     "branch": "/browse?at=test1",
                     "tag": "/browse?at=1.0.0",
                     "directory": "/browse/foo/bar",
@@ -156,46 +286,13 @@ test_groups = [
         ]
     },
     {
-        "name": "Stash tests (SSH protocol, user repo)",
-        "type": "simple",
-        "origin": "ssh://git@stash.mycompany.com:8080/~someuser/repo.git",
-        "expected": "https://stash.mycompany.com/users/someuser/repos/repo/browse"
-    },
-    {
-        "name": "Stash tests (HTTPS protocol, project repo, form 1)",
-        "type": "simple",
-        "origin": "https://someuser@stash.mycompany.com/scm/proj/repo.git",
-        "expected": "https://stash.mycompany.com/projects/PROJ/repos/repo/browse"
-    },
-    {
-        "name": "Stash tests (HTTPS protocol, user repo, form 1)",
-        "type": "simple",
-        "origin": "https://someuser@stash.mycompany.com/scm/~someuser/repo.git",
-        "expected": "https://stash.mycompany.com/users/someuser/repos/repo/browse"
-    },
-    {
-        "name": "Stash tests (HTTPS protocol, project repo, form 2)",
-        "type": "simple",
-        "origin": "https://someuser@my.company.com/stash/scm/proj/repo.git",
-        "env-setup": "os.putenv(\"TEST_STASH_URL_ROOT\", \"https://my.company.com/stash\")",
-        "expected": "https://my.company.com/stash/projects/PROJ/repos/repo/browse"
-    },
-    {
-        "name": "Stash tests (HTTPS protocol, user repo, form 2)",
-        "type": "simple",
-        "origin": "https://someuser@my.company.com/stash/scm/~someuser/repo.git",
-        "expected": "https://my.company.com/stash/users/someuser/repos/repo/browse"
-    },
-    {
-        "name": "GitHub tests (SSH protocol)",
+        "name": "GitHub tests",
         "type": "general",
-        "origin": "git@github.com:user/repo.git",
-        "expected_base": "https://github.com/user/repo",
+        "service": "github",
         "tests": [
             {
                 "run-error-tests": True,
                 "expectations": {
-                    "default": "",
                     "branch": "/tree/test1",
                     "tag": "/tree/1.0.0",
                     "directory": "/tree/master/foo/bar",
@@ -251,27 +348,13 @@ test_groups = [
         ]
     },
     {
-        "name": "GitHub tests (HTTPS protocol)",
-        "type": "simple",
-        "origin": "https://github.com/user/repo.git",
-        "expected": "https://github.com/user/repo"
-    },
-    {
-        "name": "GitHub tests (SVN protocol)",
-        "type": "simple",
-        "origin": "https://github.com/user/repo",
-        "expected": "https://github.com/user/repo"
-    },
-    {
-        "name": "GitLab tests (SSH protocol)",
+        "name": "GitLab tests",
         "type": "general",
-        "origin": "git@gitlab.com:user/repo.git",
-        "expected_base": "https://gitlab.com/user/repo",
+        "service": "gitlab",
         "tests": [
             {
                 "run-error-tests": True,
                 "expectations": {
-                    "default": "/tree/master",
                     "branch": "/tree/test1",
                     "tag": "/tree/1.0.0",
                     "directory": "/tree/master/foo/bar",
@@ -327,33 +410,13 @@ test_groups = [
         ]
     },
     {
-        "name": "GitLab tests (HTTPS protocol)",
-        "type": "simple",
-        "origin": "https://gitlab.com/user/repo.git",
-        "expected": "https://gitlab.com/user/repo/tree/master"
-    },
-    {
-        "name": "GitLab tests (SSH protocol, custom domain)",
-        "type": "simple",
-        "origin": "git@gitlab.myorg.com/user/repo.git",
-        "expected": "https://gitlab.myorg.com/user/repo/tree/master"
-    },
-    {
-        "name": "GitLab tests (HTTPS protocol, custom domain)",
-        "type": "simple",
-        "origin": "https://gitlab.myorg.com/user/repo.git",
-        "expected": "https://gitlab.myorg.com/user/repo/tree/master"
-    },
-    {
-        "name": "Gitorious tests (SSH protocol)",
+        "name": "Gitorious tests",
         "type": "general",
-        "origin": "git@gitorious.org:project/repo.git",
-        "expected_base": "https://gitorious.org/project/repo",
+        "service": "gitorious",
         "tests": [
             {
                 "run-error-tests": True,
                 "expectations": {
-                    "default": "",
                     "branch": "/source/test1",
                     "tag": "/source/1.0.0",
                     "directory": "/source/master:foo/bar",
@@ -409,27 +472,13 @@ test_groups = [
         ]
     },
     {
-        "name": "Gitorious tests (HTTPS protocol)",
-        "type": "simple",
-        "origin": "https://git.gitorious.org/project/repo.git",
-        "expected": "https://gitorious.org/project/repo"
-    },
-    {
-        "name": "Gitorious tests (Git protocol)",
-        "type": "simple",
-        "origin": "git://gitorious.org/project/repo.git",
-        "expected": "https://gitorious.org/project/repo"
-    },
-    {
-        "name": "Bitbucket tests (SSH protocol)",
+        "name": "Bitbucket tests",
         "type": "general",
-        "origin": "git@bitbucket.org:project/repo.git",
-        "expected_base": "https://bitbucket.org/project/repo",
+        "service": "bitbucket",
         "tests": [
             {
                 "run-error-tests": True,
                 "expectations": {
-                    "default": "/src",
                     "branch": "/src/test1/?at=test1",
                     "tag": "/src/1.0.0/?at=1.0.0",
                     "directory": "/src/master/foo/bar?at=master",
@@ -483,12 +532,6 @@ test_groups = [
                 }
             }
         ]
-    },
-    {
-        "name": "Bitbucket tests (HTTPS protocol)",
-        "type": "simple",
-        "origin": "https://user@bitbucket.org/project/repo.git",
-        "expected": "https://bitbucket.org/project/repo/src"
     }
 ]
 
@@ -516,6 +559,11 @@ subprocess.call("cd testrepo; git commit -m \"init\"" + to_dev_null, shell=True)
 subprocess.call("cd testrepo; git checkout -b test1" + to_dev_null, shell=True)
 subprocess.call("cd testrepo; git checkout -b test2" + to_dev_null, shell=True)
 subprocess.call("cd testrepo; git tag -a 1.0.0 -m \"1.0.0\"" + to_dev_null, shell=True)
+
+# Helper function to set the origin URL
+def set_origin(origin_url):
+    setup_cmd = "cd testrepo; git remote set-url origin {0}; git checkout master {1}".format(origin_url, to_dev_null)
+    subprocess.call(setup_cmd, shell=True)
 
 # Run the test case and handle the output
 def run_test(test_args, expected_output, prefix=""):
@@ -559,24 +607,34 @@ for group in test_groups:
 
     print "\033[93m===== " + group["name"] + " =====\033[0m"
 
-    # If there are any setup steps for this test group, run them
-    if "origin" in group:
-        out("running test group setup commands...")
-        setup_cmd = "cd testrepo; git remote set-url origin {0}; git checkout master {1}".format(group["origin"], to_dev_null)
-        subprocess.call(setup_cmd, shell=True)
+    # Run environment setup if requested to set variables for custom domains
     if "env-setup" in group:
         out("running " + group["env-setup"])
         eval(group["env-setup"])
 
-    if group["type"] == "simple":
-        # Run the simple test to ensure origin detection works
-        group_total += 1
-        success = run_test(test_definitions["default"], group["expected"])
-        if success:
-            group_successes += 1
-        else:
-            group_failures += 1
+    if group["type"] == "origins":
+        # Test all origin URL variations
+        for definition, expectation in group["tests"].iteritems():
+            def_arr = definition.split("-", 1)
+            service = def_arr[0]
+            origin = def_arr[1]
+
+            origin_def = origins_and_bases[service]["configs"][origin]
+            origin_url = origin_def["origin"]
+            set_origin(origin_url)
+            expected = origin_def["base"] + expectation
+
+            group_total += 1
+            success = run_test(test_definitions["default"], expected)
+            if success:
+                group_successes += 1
+            else:
+                group_failures += 1
     else:
+        service = group["service"]
+        default_origin = origins_and_bases[service]["default"]
+        origin_info = origins_and_bases[service]["configs"][default_origin]
+        set_origin(origin_info["origin"])
         # Handle each group of test cases for this test group
         for subgroup in group["tests"]:
             # Run any setup tasks for the subgroup
@@ -597,7 +655,7 @@ for group in test_groups:
             for case, expectation in expectations.iteritems():
                 # Get the command arguments and expected result for the test case
                 test = test_definitions[case]
-                expected_output = "{0}{1}".format(group["expected_base"], expectation)
+                expected_output = "{0}{1}".format(origin_info["base"], expectation)
                 group_total += 1
                 prefix = ""
 
