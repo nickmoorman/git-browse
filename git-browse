@@ -84,6 +84,9 @@ elif [[ $GITLAB_URL_ROOT == *$ORIGIN_DOMAIN* ]]; then
 elif [[ $ORIGIN_DOMAIN == "gitorious.org" || $ORIGIN_DOMAIN == "git.gitorious.org" ]]; then
     SERVICE="gitorious"
     URL_ROOT="https://gitorious.org"
+elif [[ $ORIGIN_DOMAIN == "bitbucket.org" ]]; then
+    SERVICE="bitbucket"
+    URL_ROOT="https://bitbucket.org"
 else
     echo "Unable to handle origin URL '$ORIGIN'; did you set the proper custom URL root settings in ~/.gitbrowse?"
     exit 65
@@ -100,6 +103,8 @@ fi
 #     git@gitorious.org:project/repository.git
 #     https://git.gitorious.org/project/repository.git
 #     git://gitorious.org/project/repository.git
+#     git@bitbucket.org:user/repository.git
+#     https://bitbucket.org/user/repository.git
 if [[ $ORIGIN =~ .*[:\/]{1}([^\/]+)\/([^\/]+).git$ ]]; then
     GROUP=${BASH_REMATCH[1]}
     REPO=${BASH_REMATCH[2]}
@@ -203,6 +208,7 @@ fi
 
 # Build the final URL for the proper service
 case $SERVICE in
+    # Build URL for GitHub or GitLab
     github|gitlab)
     if [[ $_MODE == "browse" ]]; then
         case $_TARGET_TYPE in
@@ -240,6 +246,7 @@ case $SERVICE in
     fi
     URL="$URL_ROOT/$GROUP/$REPO$MODE$REF$TARGET$LINE"
     ;;
+    # Build URL for Stash
     stash)
     GROUP=$(echo $GROUP | tr [:lower:] [:upper:])
     if [[ $TARGET != "" ]]; then
@@ -256,6 +263,7 @@ case $SERVICE in
     fi
     URL="$URL_ROOT/projects/$GROUP/repos/$REPO/$_MODE$TARGET$REF$LINE"
     ;;
+    # Build URL for Gitorious
     gitorious)
     if [[ $_MODE == "browse" ]]; then
         case $_TARGET_TYPE in
@@ -295,6 +303,60 @@ case $SERVICE in
         LINE="#L$LINE"
     fi
     URL="$URL_ROOT/$GROUP/$REPO$MODE$REF$TARGET$LINE"
+    ;;
+    # Build URL for Bitbucket
+    bitbucket)
+    _REF=$REF
+    REF="/$REF"
+    AT_REF="?at=$_REF"
+    if [[ $_MODE == "browse" ]]; then
+        MODE="/src"
+        if [[ $_REF == "master" && $TARGET == "" ]]; then
+            REF=""
+            AT_REF=""
+        elif [[ $_REF != "master" && $TARGET == "" ]]; then
+            TARGET="/"
+        fi
+    else
+        case $_TARGET_TYPE in
+            directory)
+            echo "Sorry, Bitbucket doesn't support showing the commit history of a directory"
+            exit
+            ;;
+            file)
+            MODE="/history-node"
+            ;;
+            empty)
+            REF_TYPE=$(git show-ref $_REF | grep -oE "heads|tags")
+            case $REF_TYPE in
+                heads)
+                REF_TYPE="branch"
+                ;;
+                tags)
+                REF_TYPE="tag"
+                ;;
+                *)
+                echo "Can't determine reference type for \"$_REF\"; aborting"
+                exit
+                ;;
+            esac
+            MODE="/commits/$REF_TYPE"
+            AT_REF=""
+            ;;
+            commit)
+            MODE="/commits"
+            REF=""
+            AT_REF=""
+            ;;
+        esac
+    fi
+    if [[ $TARGET != "" && $TARGET != "/" ]]; then
+        TARGET="/$TARGET"
+    fi
+    if [[ $LINE != "" ]]; then
+        LINE="#cl-$LINE"
+    fi
+    URL="$URL_ROOT/$GROUP/$REPO$MODE$REF$TARGET$AT_REF$LINE"
     ;;
 esac
 

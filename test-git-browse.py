@@ -327,6 +327,70 @@ test_groups = [
                 }
             }
         ]
+    },
+    {
+        "name": "Bitbucket tests (SSH protocol)",
+        "setup": "cd testrepo; git remote set-url origin git@bitbucket.org:project/repo.git; git checkout master",
+        "expected_base": "https://bitbucket.org/project/repo",
+        "command_base": "git-browse --url-only ",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "/src",
+                    "filename": "/src/master/foo/bar/baz.ext?at=master",
+                    "filename-ref": "/src/test1/foo/bar/baz.ext?at=test1",
+                    "ref-filename": "/src/test1/foo/bar/baz.ext?at=test1",
+                    "filename-line": "/src/master/foo/bar/baz.ext?at=master#cl-25",
+                    "filename-ref-line": "/src/test1/foo/bar/baz.ext?at=test1#cl-25",
+                    "commit": "/commits/a78cd8e",
+                    "commits": "/commits/branch/master",
+                    "ref": "/src/test1/?at=test1",
+                    "commits-ref": "/commits/branch/test1",
+                    "ref-commits": "/commits/branch/test1"
+                }
+            },
+            {
+                "filename": "baz.ext",
+                "prefix-command": "cd foo/bar",
+                "expectations": {
+                    "default": "/src/master/foo/bar?at=master",
+                    "filename": "/src/master/foo/bar/baz.ext?at=master",
+                    "filename-ref": "/src/test1/foo/bar/baz.ext?at=test1",
+                    "ref-filename": "/src/test1/foo/bar/baz.ext?at=test1",
+                    "filename-line": "/src/master/foo/bar/baz.ext?at=master#cl-25",
+                    "filename-ref-line": "/src/test1/foo/bar/baz.ext?at=test1#cl-25",
+                    "commit": "/commits/a78cd8e",
+                    "commits": "/commits/branch/master",
+                    "ref": "/src/test1/foo/bar?at=test1",
+                    "commits-ref": "/commits/branch/test1",
+                    "ref-commits": "/commits/branch/test1"
+                }
+            },
+            {
+                "before": "git checkout test2",
+                "expectations": {
+                    "filename": "/src/test2/foo/bar/baz.ext?at=test2",
+                    "filename-line": "/src/test2/foo/bar/baz.ext?at=test2#cl-25",
+                    "commit": "/commits/a78cd8e",
+                    "commits": "/commits/branch/test2"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Bitbucket tests (HTTPS protocol)",
+        "setup": "cd testrepo; git remote set-url origin https://user@bitbucket.org/project/repo.git; git checkout master",
+        "expected_base": "https://bitbucket.org/project/repo",
+        "command_base": "git-browse --url-only ",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "/src",
+                    "filename": "/src/master/foo/bar/baz.ext?at=master",
+                    "filename-ref": "/src/test1/foo/bar/baz.ext?at=test1"
+                }
+            }
+        ]
     }
 ]
 
