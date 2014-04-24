@@ -11,19 +11,33 @@ import subprocess
 os.environ["TEST_STASH_URL_ROOT"] = "https://stash.mycompany.com"
 os.environ["TEST_GITLAB_URL_ROOT"] = "https://gitlab.myorg.com"
 
+DEFAULT_COMMAND_BASE = "git-browse --url-only "
+DEFAULT_DIRECTORY = "foo/bar"
+DEFAULT_FILENAME = "foo/bar/baz.ext"
+
 # Define the different argument combinations to test
 test_definitions = {
     "default": "",
+    "branch": "--ref=test1",
+    "tag": "--ref=1.0.0",
+    "directory": "{0}",
+    "directory-branch": "{0} --ref=test1",
+    "directory-tag": "{0} --ref=1.0.0",
     "filename": "{0}",
-    "filename-ref": "{0} --ref=test1",
-    "ref-filename": "--ref=test1 {0}",
-    "filename-line": "{0} --line=25",
-    "filename-ref-line": "{0} --ref=test1 --line=25",
-    "commit": "a78cd8e",
+    "filename-branch": "{0} --ref=test1",
+    "filename-tag": "{0} --ref=1.0.0",
+    "filename-line": "{0} --line=5",
+    "filename-branch-line": "{0} --ref=test1 --line=5",
+    "filename-tag-line": "{0} --ref=test1 --line=5",
+    "commit": "092e8627fde84d5558c4429775d3498ec1ddce9a",
     "commits": "--commits",
-    "ref": "--ref=test1",
-    "commits-ref": "--commits --ref=test1",
-    "ref-commits": "--ref=test1 --commits"
+    "commits-branch": "--commits --ref=test1",
+    "commits-tag": "--commits --ref=1.0.0",
+    "line": "--line=5",
+    "branch-line": "--ref=test1 --line=5",
+    "directory-line": "{0} --line=5",
+    "commit-line": "092e8627fde84d5558c4429775d3498ec1ddce9a --line=5",
+    "commits-line": "--commits --line=5"
 }
 
 # Define groups of tests; each group tests a different type of repository
@@ -31,21 +45,29 @@ test_groups = [
     {
         "name": "Stash tests (SSH protocol)",
         "expected_base": "https://stash.mycompany.com/projects/PROJ/repos/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
                     "default": "/browse",
+                    "branch": "/browse?at=test1",
+                    "tag": "/browse?at=1.0.0",
+                    "directory": "/browse/foo/bar",
+                    "directory-branch": "/browse/foo/bar?at=test1",
+                    "directory-tag": "/browse/foo/bar?at=1.0.0",
                     "filename": "/browse/foo/bar/baz.ext",
-                    "filename-ref": "/browse/foo/bar/baz.ext?at=test1",
-                    "ref-filename": "/browse/foo/bar/baz.ext?at=test1",
-                    "filename-line": "/browse/foo/bar/baz.ext#25",
-                    "filename-ref-line": "/browse/foo/bar/baz.ext?at=test1#25",
-                    "commit": "/commits/a78cd8e",
+                    "filename-branch": "/browse/foo/bar/baz.ext?at=test1",
+                    "filename-tag": "/browse/foo/bar/baz.ext?at=1.0.0",
+                    "filename-line": "/browse/foo/bar/baz.ext#5",
+                    "filename-branch-line": "/browse/foo/bar/baz.ext?at=test1#5",
+                    "commit": "/commits/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits",
-                    "ref": "/browse?at=test1",
-                    "commits-ref": "/commits?at=test1",
-                    "ref-commits": "/commits?at=test1"
+                    "commits-branch": "/commits?at=test1",
+                    "commits-tag": "/commits?at=1.0.0",
+                    "line": 64,
+                    "branch-line": 64,
+                    "directory-line": 64,
+                    "commit-line": 64,
+                    "commits-line": 64
                 }
             },
             {
@@ -53,24 +75,27 @@ test_groups = [
                 "prefix-command": "cd foo/bar",
                 "expectations": {
                     "default": "/browse/foo/bar",
+                    "branch": "/browse/foo/bar?at=test1",
+                    "tag": "/browse/foo/bar?at=1.0.0",
                     "filename": "/browse/foo/bar/baz.ext",
-                    "filename-ref": "/browse/foo/bar/baz.ext?at=test1",
-                    "ref-filename": "/browse/foo/bar/baz.ext?at=test1",
-                    "filename-line": "/browse/foo/bar/baz.ext#25",
-                    "filename-ref-line": "/browse/foo/bar/baz.ext?at=test1#25",
-                    "commit": "/commits/a78cd8e",
+                    "filename-branch": "/browse/foo/bar/baz.ext?at=test1",
+                    "filename-tag": "/browse/foo/bar/baz.ext?at=1.0.0",
+                    "filename-line": "/browse/foo/bar/baz.ext#5",
+                    "filename-branch-line": "/browse/foo/bar/baz.ext?at=test1#5",
+                    "commit": "/commits/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits",
-                    "ref": "/browse/foo/bar?at=test1",
-                    "commits-ref": "/commits?at=test1",
-                    "ref-commits": "/commits?at=test1"
+                    "commits-branch": "/commits?at=test1",
+                    "commits-tag": "/commits?at=1.0.0"
                 }
             },
             {
                 "before": "git checkout test2",
                 "expectations": {
+                    "default": "/browse?at=test2",
+                    "directory": "/browse/foo/bar?at=test2",
                     "filename": "/browse/foo/bar/baz.ext?at=test2",
-                    "filename-line": "/browse/foo/bar/baz.ext?at=test2#25",
-                    "commit": "/commits/a78cd8e?at=test2",
+                    "filename-line": "/browse/foo/bar/baz.ext?at=test2#5",
+                    "commit": "/commits/092e8627fde84d5558c4429775d3498ec1ddce9a?at=test2",
                     "commits": "/commits?at=test2"
                 }
             }
@@ -80,13 +105,10 @@ test_groups = [
         "name": "Stash tests (HTTPS protocol)",
         "setup": "cd testrepo; git remote set-url origin https://someuser@stash.mycompany.com/scm/proj/repo.git; git checkout master",
         "expected_base": "https://stash.mycompany.com/projects/PROJ/repos/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
-                    "default": "/browse",
-                    "filename": "/browse/foo/bar/baz.ext",
-                    "filename-ref": "/browse/foo/bar/baz.ext?at=test1"
+                    "default": "/browse"
                 }
             }
         ]
@@ -95,21 +117,29 @@ test_groups = [
         "name": "GitHub tests (SSH protocol)",
         "setup": "cd testrepo; git remote set-url origin git@github.com:user/repo.git; git checkout master",
         "expected_base": "https://github.com/user/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
                     "default": "",
+                    "branch": "/tree/test1",
+                    "tag": "/tree/1.0.0",
+                    "directory": "/tree/master/foo/bar",
+                    "directory-branch": "/tree/test1/foo/bar",
+                    "directory-tag": "/tree/1.0.0/foo/bar",
                     "filename": "/blob/master/foo/bar/baz.ext",
-                    "filename-ref": "/blob/test1/foo/bar/baz.ext",
-                    "ref-filename": "/blob/test1/foo/bar/baz.ext",
-                    "filename-line": "/blob/master/foo/bar/baz.ext#L25",
-                    "filename-ref-line": "/blob/test1/foo/bar/baz.ext#L25",
-                    "commit": "/commit/a78cd8e",
+                    "filename-branch": "/blob/test1/foo/bar/baz.ext",
+                    "filename-tag": "/blob/1.0.0/foo/bar/baz.ext",
+                    "filename-line": "/blob/master/foo/bar/baz.ext#L5",
+                    "filename-branch-line": "/blob/test1/foo/bar/baz.ext#L5",
+                    "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/master",
-                    "ref": "/tree/test1",
-                    "commits-ref": "/commits/test1",
-                    "ref-commits": "/commits/test1"
+                    "commits-branch": "/commits/test1",
+                    "commits-tag": "/commits/1.0.0",
+                    "line": 64,
+                    "branch-line": 64,
+                    "directory-line": 64,
+                    "commit-line": 64,
+                    "commits-line": 64
                 }
             },
             {
@@ -117,24 +147,25 @@ test_groups = [
                 "prefix-command": "cd foo/bar",
                 "expectations": {
                     "default": "/tree/master/foo/bar",
+                    "branch": "/tree/test1/foo/bar",
+                    "tag": "/tree/1.0.0/foo/bar",
                     "filename": "/blob/master/foo/bar/baz.ext",
-                    "filename-ref": "/blob/test1/foo/bar/baz.ext",
-                    "ref-filename": "/blob/test1/foo/bar/baz.ext",
-                    "filename-line": "/blob/master/foo/bar/baz.ext#L25",
-                    "filename-ref-line": "/blob/test1/foo/bar/baz.ext#L25",
-                    "commit": "/commit/a78cd8e",
+                    "filename-branch": "/blob/test1/foo/bar/baz.ext",
+                    "filename-tag": "/blob/1.0.0/foo/bar/baz.ext",
+                    "filename-line": "/blob/master/foo/bar/baz.ext#L5",
+                    "filename-branch-line": "/blob/test1/foo/bar/baz.ext#L5",
+                    "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/master",
-                    "ref": "/tree/test1/foo/bar",
-                    "commits-ref": "/commits/test1",
-                    "ref-commits": "/commits/test1"
+                    "commits-branch": "/commits/test1",
+                    "commits-tag": "/commits/1.0.0"
                 }
             },
             {
                 "before": "git checkout test2",
                 "expectations": {
                     "filename": "/blob/test2/foo/bar/baz.ext",
-                    "filename-line": "/blob/test2/foo/bar/baz.ext#L25",
-                    "commit": "/commit/a78cd8e",
+                    "filename-line": "/blob/test2/foo/bar/baz.ext#L5",
+                    "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/test2"
                 }
             }
@@ -144,13 +175,10 @@ test_groups = [
         "name": "GitHub tests (HTTPS protocol)",
         "setup": "cd testrepo; git remote set-url origin https://github.com/user/repo.git; git checkout master",
         "expected_base": "https://github.com/user/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
-                    "default": "",
-                    "filename": "/blob/master/foo/bar/baz.ext",
-                    "filename-ref": "/blob/test1/foo/bar/baz.ext"
+                    "default": ""
                 }
             }
         ]
@@ -159,21 +187,29 @@ test_groups = [
         "name": "GitLab tests (SSH protocol)",
         "setup": "cd testrepo; git remote set-url origin git@gitlab.com:user/repo.git; git checkout master",
         "expected_base": "https://gitlab.com/user/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
                     "default": "/tree/master",
+                    "branch": "/tree/test1",
+                    "tag": "/tree/1.0.0",
+                    "directory": "/tree/master/foo/bar",
+                    "directory-branch": "/tree/test1/foo/bar",
+                    "directory-tag": "/tree/1.0.0/foo/bar",
                     "filename": "/blob/master/foo/bar/baz.ext",
-                    "filename-ref": "/blob/test1/foo/bar/baz.ext",
-                    "ref-filename": "/blob/test1/foo/bar/baz.ext",
-                    "filename-line": "/blob/master/foo/bar/baz.ext#L25",
-                    "filename-ref-line": "/blob/test1/foo/bar/baz.ext#L25",
-                    "commit": "/commit/a78cd8e",
+                    "filename-branch": "/blob/test1/foo/bar/baz.ext",
+                    "filename-tag": "/blob/1.0.0/foo/bar/baz.ext",
+                    "filename-line": "/blob/master/foo/bar/baz.ext#L5",
+                    "filename-branch-line": "/blob/test1/foo/bar/baz.ext#L5",
+                    "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/master",
-                    "ref": "/tree/test1",
-                    "commits-ref": "/commits/test1",
-                    "ref-commits": "/commits/test1"
+                    "commits-branch": "/commits/test1",
+                    "commits-tag": "/commits/1.0.0",
+                    "line": 64,
+                    "branch-line": 64,
+                    "directory-line": 64,
+                    "commit-line": 64,
+                    "commits-line": 64
                 }
             },
             {
@@ -181,24 +217,25 @@ test_groups = [
                 "prefix-command": "cd foo/bar",
                 "expectations": {
                     "default": "/tree/master/foo/bar",
+                    "branch": "/tree/test1/foo/bar",
+                    "tag": "/tree/1.0.0/foo/bar",
                     "filename": "/blob/master/foo/bar/baz.ext",
-                    "filename-ref": "/blob/test1/foo/bar/baz.ext",
-                    "ref-filename": "/blob/test1/foo/bar/baz.ext",
-                    "filename-line": "/blob/master/foo/bar/baz.ext#L25",
-                    "filename-ref-line": "/blob/test1/foo/bar/baz.ext#L25",
-                    "commit": "/commit/a78cd8e",
+                    "filename-branch": "/blob/test1/foo/bar/baz.ext",
+                    "filename-tag": "/blob/1.0.0/foo/bar/baz.ext",
+                    "filename-line": "/blob/master/foo/bar/baz.ext#L5",
+                    "filename-branch-line": "/blob/test1/foo/bar/baz.ext#L5",
+                    "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/master",
-                    "ref": "/tree/test1/foo/bar",
-                    "commits-ref": "/commits/test1",
-                    "ref-commits": "/commits/test1"
+                    "commits-branch": "/commits/test1",
+                    "commits-tag": "/commits/1.0.0"
                 }
             },
             {
                 "before": "git checkout test2",
                 "expectations": {
                     "filename": "/blob/test2/foo/bar/baz.ext",
-                    "filename-line": "/blob/test2/foo/bar/baz.ext#L25",
-                    "commit": "/commit/a78cd8e",
+                    "filename-line": "/blob/test2/foo/bar/baz.ext#L5",
+                    "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/test2"
                 }
             }
@@ -208,13 +245,10 @@ test_groups = [
         "name": "GitLab tests (HTTPS protocol)",
         "setup": "cd testrepo; git remote set-url origin https://gitlab.com/user/repo.git; git checkout master",
         "expected_base": "https://gitlab.com/user/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
-                    "default": "/tree/master",
-                    "filename": "/blob/master/foo/bar/baz.ext",
-                    "filename-ref": "/blob/test1/foo/bar/baz.ext"
+                    "default": "/tree/master"
                 }
             }
         ]
@@ -223,13 +257,10 @@ test_groups = [
         "name": "GitLab tests (SSH protocol, custom domain)",
         "setup": "cd testrepo; git remote set-url origin git@gitlab.myorg.com/user/repo.git; git checkout master",
         "expected_base": "https://gitlab.myorg.com/user/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
-                    "default": "/tree/master",
-                    "filename": "/blob/master/foo/bar/baz.ext",
-                    "filename-ref": "/blob/test1/foo/bar/baz.ext"
+                    "default": "/tree/master"
                 }
             }
         ]
@@ -238,13 +269,10 @@ test_groups = [
         "name": "GitLab tests (HTTPS protocol, custom domain)",
         "setup": "cd testrepo; git remote set-url origin https://gitlab.myorg.com/user/repo.git; git checkout master",
         "expected_base": "https://gitlab.myorg.com/user/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
-                    "default": "/tree/master",
-                    "filename": "/blob/master/foo/bar/baz.ext",
-                    "filename-ref": "/blob/test1/foo/bar/baz.ext"
+                    "default": "/tree/master"
                 }
             }
         ]
@@ -253,21 +281,29 @@ test_groups = [
         "name": "Gitorious tests (SSH protocol)",
         "setup": "cd testrepo; git remote set-url origin git@gitorious.org:project/repo.git; git checkout master",
         "expected_base": "https://gitorious.org/project/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
                     "default": "",
+                    "branch": "/source/test1",
+                    "tag": "/source/1.0.0",
+                    "directory": "/source/master:foo/bar",
+                    "directory-branch": "/source/test1:foo/bar",
+                    "directory-tag": "/source/1.0.0:foo/bar",
                     "filename": "/source/master:foo/bar/baz.ext",
-                    "filename-ref": "/source/test1:foo/bar/baz.ext",
-                    "ref-filename": "/source/test1:foo/bar/baz.ext",
-                    "filename-line": "/source/master:foo/bar/baz.ext#L25",
-                    "filename-ref-line": "/source/test1:foo/bar/baz.ext#L25",
-                    "commit": "/commit/a78cd8e",
+                    "filename-branch": "/source/test1:foo/bar/baz.ext",
+                    "filename-tag": "/source/1.0.0:foo/bar/baz.ext",
+                    "filename-line": "/source/master:foo/bar/baz.ext#L5",
+                    "filename-branch-line": "/source/test1:foo/bar/baz.ext#L5",
+                    "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/master",
-                    "ref": "/source/test1",
-                    "commits-ref": "/commits/test1",
-                    "ref-commits": "/commits/test1"
+                    "commits-branch": "/commits/test1",
+                    "commits-tag": "/commits/1.0.0",
+                    "line": 64,
+                    "branch-line": 64,
+                    "directory-line": 64,
+                    "commit-line": 64,
+                    "commits-line": 64
                 }
             },
             {
@@ -275,24 +311,25 @@ test_groups = [
                 "prefix-command": "cd foo/bar",
                 "expectations": {
                     "default": "/source/master:foo/bar",
+                    "branch": "/source/test1:foo/bar",
+                    "tag": "/source/1.0.0:foo/bar",
                     "filename": "/source/master:foo/bar/baz.ext",
-                    "filename-ref": "/source/test1:foo/bar/baz.ext",
-                    "ref-filename": "/source/test1:foo/bar/baz.ext",
-                    "filename-line": "/source/master:foo/bar/baz.ext#L25",
-                    "filename-ref-line": "/source/test1:foo/bar/baz.ext#L25",
-                    "commit": "/commit/a78cd8e",
+                    "filename-branch": "/source/test1:foo/bar/baz.ext",
+                    "filename-tag": "/source/1.0.0:foo/bar/baz.ext",
+                    "filename-line": "/source/master:foo/bar/baz.ext#L5",
+                    "filename-branch-line": "/source/test1:foo/bar/baz.ext#L5",
+                    "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/master",
-                    "ref": "/source/test1:foo/bar",
-                    "commits-ref": "/commits/test1",
-                    "ref-commits": "/commits/test1"
+                    "commits-branch": "/commits/test1",
+                    "commits-tag": "/commits/1.0.0"
                 }
             },
             {
                 "before": "git checkout test2",
                 "expectations": {
                     "filename": "/source/test2:foo/bar/baz.ext",
-                    "filename-line": "/source/test2:foo/bar/baz.ext#L25",
-                    "commit": "/commit/a78cd8e",
+                    "filename-line": "/source/test2:foo/bar/baz.ext#L5",
+                    "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/test2"
                 }
             }
@@ -302,13 +339,10 @@ test_groups = [
         "name": "Gitorious tests (HTTPS protocol)",
         "setup": "cd testrepo; git remote set-url origin https://git.gitorious.org/project/repo.git; git checkout master",
         "expected_base": "https://gitorious.org/project/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
-                    "default": "",
-                    "filename": "/source/master:foo/bar/baz.ext",
-                    "filename-ref": "/source/test1:foo/bar/baz.ext"
+                    "default": ""
                 }
             }
         ]
@@ -317,13 +351,10 @@ test_groups = [
         "name": "Gitorious tests (Git protocol)",
         "setup": "cd testrepo; git remote set-url origin git://gitorious.org/project/repo.git; git checkout master",
         "expected_base": "https://gitorious.org/project/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
-                    "default": "",
-                    "filename": "/source/master:foo/bar/baz.ext",
-                    "filename-ref": "/source/test1:foo/bar/baz.ext"
+                    "default": ""
                 }
             }
         ]
@@ -332,21 +363,29 @@ test_groups = [
         "name": "Bitbucket tests (SSH protocol)",
         "setup": "cd testrepo; git remote set-url origin git@bitbucket.org:project/repo.git; git checkout master",
         "expected_base": "https://bitbucket.org/project/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
                     "default": "/src",
+                    "branch": "/src/test1/?at=test1",
+                    "tag": "/src/1.0.0/?at=1.0.0",
+                    "directory": "/src/master/foo/bar?at=master",
+                    "directory-branch": "/src/test1/foo/bar?at=test1",
+                    "directory-tag": "/src/1.0.0/foo/bar?at=1.0.0",
                     "filename": "/src/master/foo/bar/baz.ext?at=master",
-                    "filename-ref": "/src/test1/foo/bar/baz.ext?at=test1",
-                    "ref-filename": "/src/test1/foo/bar/baz.ext?at=test1",
-                    "filename-line": "/src/master/foo/bar/baz.ext?at=master#cl-25",
-                    "filename-ref-line": "/src/test1/foo/bar/baz.ext?at=test1#cl-25",
-                    "commit": "/commits/a78cd8e",
+                    "filename-branch": "/src/test1/foo/bar/baz.ext?at=test1",
+                    "filename-tag": "/src/1.0.0/foo/bar/baz.ext?at=1.0.0",
+                    "filename-line": "/src/master/foo/bar/baz.ext?at=master#cl-5",
+                    "filename-branch-line": "/src/test1/foo/bar/baz.ext?at=test1#cl-5",
+                    "commit": "/commits/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/branch/master",
-                    "ref": "/src/test1/?at=test1",
-                    "commits-ref": "/commits/branch/test1",
-                    "ref-commits": "/commits/branch/test1"
+                    "commits-branch": "/commits/branch/test1",
+                    "commits-tag": "/commits/tag/1.0.0",
+                    "line": 64,
+                    "branch-line": 64,
+                    "directory-line": 64,
+                    "commit-line": 64,
+                    "commits-line": 64
                 }
             },
             {
@@ -354,24 +393,25 @@ test_groups = [
                 "prefix-command": "cd foo/bar",
                 "expectations": {
                     "default": "/src/master/foo/bar?at=master",
+                    "branch": "/src/test1/foo/bar?at=test1",
+                    "tag": "/src/1.0.0/foo/bar?at=1.0.0",
                     "filename": "/src/master/foo/bar/baz.ext?at=master",
-                    "filename-ref": "/src/test1/foo/bar/baz.ext?at=test1",
-                    "ref-filename": "/src/test1/foo/bar/baz.ext?at=test1",
-                    "filename-line": "/src/master/foo/bar/baz.ext?at=master#cl-25",
-                    "filename-ref-line": "/src/test1/foo/bar/baz.ext?at=test1#cl-25",
-                    "commit": "/commits/a78cd8e",
+                    "filename-branch": "/src/test1/foo/bar/baz.ext?at=test1",
+                    "filename-tag": "/src/1.0.0/foo/bar/baz.ext?at=1.0.0",
+                    "filename-line": "/src/master/foo/bar/baz.ext?at=master#cl-5",
+                    "filename-branch-line": "/src/test1/foo/bar/baz.ext?at=test1#cl-5",
+                    "commit": "/commits/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/branch/master",
-                    "ref": "/src/test1/foo/bar?at=test1",
-                    "commits-ref": "/commits/branch/test1",
-                    "ref-commits": "/commits/branch/test1"
+                    "commits-branch": "/commits/branch/test1",
+                    "commits-tag": "/commits/tag/1.0.0"
                 }
             },
             {
                 "before": "git checkout test2",
                 "expectations": {
                     "filename": "/src/test2/foo/bar/baz.ext?at=test2",
-                    "filename-line": "/src/test2/foo/bar/baz.ext?at=test2#cl-25",
-                    "commit": "/commits/a78cd8e",
+                    "filename-line": "/src/test2/foo/bar/baz.ext?at=test2#cl-5",
+                    "commit": "/commits/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/branch/test2"
                 }
             }
@@ -381,13 +421,10 @@ test_groups = [
         "name": "Bitbucket tests (HTTPS protocol)",
         "setup": "cd testrepo; git remote set-url origin https://user@bitbucket.org/project/repo.git; git checkout master",
         "expected_base": "https://bitbucket.org/project/repo",
-        "command_base": "git-browse --url-only ",
         "tests": [
             {
                 "expectations": {
-                    "default": "/src",
-                    "filename": "/src/master/foo/bar/baz.ext?at=master",
-                    "filename-ref": "/src/test1/foo/bar/baz.ext?at=test1"
+                    "default": "/src"
                 }
             }
         ]
@@ -409,6 +446,7 @@ subprocess.call("cd testrepo; git add foo", shell=True)
 subprocess.call("cd testrepo; git commit -m \"init\"", shell=True)
 subprocess.call("cd testrepo; git checkout -b test1", shell=True)
 subprocess.call("cd testrepo; git checkout -b test2", shell=True)
+subprocess.call("cd testrepo; git tag -a 1.0.0 -m \"1.0.0\"", shell=True)
 subprocess.call("cd testrepo; git checkout master", shell=True)
 
 # Loop over each defined group of tests
@@ -432,31 +470,41 @@ for group in test_groups:
             print "running " + subgroup["before"]
             subprocess.call("cd testrepo; " + subgroup["before"], shell=True)
 
-        # Default the filename if one hasn't been specified
+        # Default the directory and filename if they haven't been specified
+        directory = subgroup["directory"] if "directory" in subgroup else "foo/bar/"
         filename = subgroup["filename"] if "filename" in subgroup else "foo/bar/baz.ext"
         for case, expectation in subgroup["expectations"].iteritems():
             # Get the command arguments and expected result for the test case
             test = test_definitions[case]
-            expected_output = group["expected_base"] + expectation
+            expected_output = "{0}{1}".format(group["expected_base"], expectation)
             group_total += 1
             prefix = "cd testrepo; "
 
             if "prefix-command" in subgroup:
                 prefix += subgroup["prefix-command"]
 
-            # Inject the correct filename into the arguments if required
-            if "filename" in case:
+            # Inject the correct directory/filename into the arguments if required
+            if "directory" in case:
+                test = test.format(directory)
+            elif "filename" in case:
                 test = test.format(filename)
 
             # Finally, execute the test case
-            test = group["command_base"] + test
+            test = DEFAULT_COMMAND_BASE + test
             cmd = "{0} &>/dev/null; {1}".format(prefix, test)
 
             print "running \"{0}\"...".format(prefix)
             print "testing \"{0}\"...".format(test)
-            output = subprocess.check_output(cmd, shell=True).rstrip()
+            output = ""
+            exit_code = 0
+            try:
+                output = subprocess.check_output(cmd, shell=True).rstrip()
+            except subprocess.CalledProcessError, e:
+                output = e.output
+                exit_code = e.returncode
+
             # Check the output to see if the test passed or failed, and print the result
-            if output == expected_output:
+            if output == expected_output or exit_code == expectation:
                 print " > \033[92mpass\033[0m"
                 group_successes += 1
             else:
