@@ -12,7 +12,8 @@
 
 function showUsage {
     echo
-    echo "USAGE: git-browse [--url-only] [--ref=<head-reference>] [ [--commits] | [<path>] [--line=<line>] ]"
+    echo "USAGE: git-browse [--url-only]"
+    echo "           [ [--ref=<head-reference>] [ --commits | <path> [ --raw | [--line=<line>] [--blame] ] | <hash> ] ]"
     echo
     echo "Running the script with no arguments will open the web view of the current"
     echo "directory in your browser at the currently checked out branch/tag/commit."
@@ -25,7 +26,10 @@ function showUsage {
     echo "    The '--commits' flag, which switches to commit listing mode"
     echo
     echo "Note: If you're passing a file path and you want to point to a particular line"
-    echo "in the file, use the '--line' argument."
+    echo "in the file, use the '--line' argument.  You can also use the '--blame' argument for"
+    echo "some hosting services to go directly to the 'git blame' results.  '--blame' and '--line'"
+    echo "can be used together.  Alternatively, you can get the raw file by passing '--raw'.  This"
+    echo "argument can not be used with the previously described arguments."
     echo
     echo "Using the '--url-only' flag will execute the script the same way, but only"
     echo "display the URL without opening it in your browser."
@@ -144,6 +148,22 @@ for arg in "$@"; do
         LINE="${arg#*=}"
         shift
         ;;
+        --raw)
+        RAW=true
+        shift
+        ;;
+        --blame)
+        case $SERVICE in
+            stash)
+            echo "Stash does not provide a way to show \"blame\" info via URL"
+            exit 64
+            ;;
+            *)
+            BLAME=true
+            ;;
+        esac
+        shift
+        ;;
         --version)
         echo "git-browse, v$_VERSION_NUMBER"
         exit
@@ -179,9 +199,16 @@ if [[ $TARGET != "" ]]; then
     fi
 fi
 
-# Only allow line number if the target is a file
-if [[ $LINE != "" && $_TARGET_TYPE != "file" ]]; then
-    echo "Line number only supported for files; aborting"
+# Raw, blame, and line number can only be used with files
+if [[ $_TARGET_TYPE != "file" ]]; then
+    if [[ $LINE != "" || $RAW == true || $BLAME == true ]]; then
+        echo "\"--line\", \"--raw\", and \"--blame\" can only be used when targeting files"
+        exit 64
+    fi
+fi
+# Raw is mutually exclusive with blame and line number
+if [[ $RAW == true && ( $LINE != "" || $BLAME == true ) ]]; then
+    echo "\"--raw\" cannot be used with \"--line\" or \"--blame\""
     exit 64
 fi
 
@@ -256,6 +283,12 @@ case $SERVICE in
     if [[ $LINE != "" ]]; then
         LINE="#L$LINE"
     fi
+    if [[ $RAW == true ]]; then
+        MODE="/raw"
+    fi
+    if [[ $BLAME == true ]]; then
+        MODE="/blame"
+    fi
     URL="$URL_ROOT/$GROUP/$REPO$MODE$REF$TARGET$LINE"
     ;;
     # Build URL for Stash
@@ -275,11 +308,16 @@ case $SERVICE in
     fi
     if [[ $REF != "" ]]; then
         REF="?at=$REF"
+        if [[ $RAW == true ]]; then
+            RAW="&raw"
+        fi
+    elif [[ $RAW == true ]]; then
+        RAW="?raw"
     fi
     if [[ $LINE != "" ]]; then
         LINE="#$LINE"
     fi
-    URL="$URL_ROOT/$TYPE/$GROUP/repos/$REPO/$_MODE$TARGET$REF$LINE"
+    URL="$URL_ROOT/$TYPE/$GROUP/repos/$REPO/$_MODE$TARGET$REF$RAW$LINE"
     ;;
     # Build URL for Gitorious
     gitorious)
@@ -319,6 +357,12 @@ case $SERVICE in
     fi
     if [[ $LINE != "" ]]; then
         LINE="#L$LINE"
+    fi
+    if [[ $RAW == true ]]; then
+        MODE="/raw"
+    fi
+    if [[ $BLAME == true ]]; then
+        MODE="/blame"
     fi
     URL="$URL_ROOT/$GROUP/$REPO$MODE$REF$TARGET$LINE"
     ;;
@@ -373,6 +417,12 @@ case $SERVICE in
     fi
     if [[ $LINE != "" ]]; then
         LINE="#cl-$LINE"
+    fi
+    if [[ $RAW == true ]]; then
+        MODE="/raw"
+    fi
+    if [[ $BLAME == true ]]; then
+        MODE="/annotate"
     fi
     URL="$URL_ROOT/$GROUP/$REPO$MODE$REF$TARGET$AT_REF$LINE"
     ;;

@@ -43,7 +43,48 @@ test_definitions = {
     "branch-line": "--ref=test1 --line=5",
     "directory-line": "{0} --line=5",
     "commit-line": "092e8627fde84d5558c4429775d3498ec1ddce9a --line=5",
-    "commits-line": "--commits --line=5"
+    "commits-line": "--commits --line=5",
+    "raw": "--raw",
+    "directory-raw": "{0} --raw",
+    "filename-raw": "{0} --raw",
+    "filename-branch-raw": "{0} --ref=test1 --raw",
+    "filename-line-raw": "{0} --line=5 --raw",
+    "filename-branch-line-raw": "{0} --ref=test1 --line=5 --raw",
+    "commit-raw": "092e8627fde84d5558c4429775d3498ec1ddce9a --raw",
+    "commits-raw": "--commits --raw",
+    "blame": "--blame",
+    "directory-blame": "{0} --blame",
+    "filename-blame": "{0} --blame",
+    "filename-branch-blame": "{0} --ref=test1 --blame",
+    "filename-line-blame": "{0} --line=5 --blame",
+    "filename-branch-line-blame": "{0} --ref=test1 --line=5 --blame",
+    "commit-blame": "092e8627fde84d5558c4429775d3498ec1ddce9a --blame",
+    "commits-blame": "--commits --blame",
+    "raw-blame": "--raw --blame",
+    "directory-raw-blame": "{0} --raw --blame",
+    "filename-raw-blame": "{0} --raw --blame"
+}
+
+# These tests represent invalid use cases that should return an error for any host
+error_tests = {
+    "line": 64,
+    "branch-line": 64,
+    "directory-line": 64,
+    "commit-line": 64,
+    "commits-line": 64,
+    "raw": 64,
+    "directory-raw": 64,
+    "filename-line-raw": 64,
+    "filename-branch-line-raw": 64,
+    "commit-raw": 64,
+    "commits-raw": 64,
+    "blame": 64,
+    "directory-blame": 64,
+    "commit-blame": 64,
+    "commits-blame": 64,
+    "raw-blame": 64,
+    "directory-raw-blame": 64,
+    "filename-raw-blame": 64
 }
 
 # Define groups of tests; each group tests a different type of repository
@@ -53,6 +94,7 @@ test_groups = [
         "expected_base": "https://stash.mycompany.com/projects/PROJ/repos/repo",
         "tests": [
             {
+                "run-error-tests": True,
                 "expectations": {
                     "default": "/browse",
                     "branch": "/browse?at=test1",
@@ -69,11 +111,12 @@ test_groups = [
                     "commits": "/commits",
                     "commits-branch": "/commits?at=test1",
                     "commits-tag": "/commits?at=1.0.0",
-                    "line": 64,
-                    "branch-line": 64,
-                    "directory-line": 64,
-                    "commit-line": 64,
-                    "commits-line": 64
+                    "filename-raw": "/browse/foo/bar/baz.ext?raw",
+                    "filename-branch-raw": "/browse/foo/bar/baz.ext?at=test1&raw",
+                    "filename-blame": 64,
+                    "filename-branch-blame": 64,
+                    "filename-line-blame": 64,
+                    "filename-branch-line-blame": 64
                 }
             },
             {
@@ -91,7 +134,9 @@ test_groups = [
                     "commit": "/commits/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits",
                     "commits-branch": "/commits?at=test1",
-                    "commits-tag": "/commits?at=1.0.0"
+                    "commits-tag": "/commits?at=1.0.0",
+                    "filename-raw": "/browse/foo/bar/baz.ext?raw",
+                    "filename-branch-raw": "/browse/foo/bar/baz.ext?at=test1&raw"
                 }
             },
             {
@@ -102,7 +147,8 @@ test_groups = [
                     "filename": "/browse/foo/bar/baz.ext?at=test2",
                     "filename-line": "/browse/foo/bar/baz.ext?at=test2#5",
                     "commit": "/commits/092e8627fde84d5558c4429775d3498ec1ddce9a?at=test2",
-                    "commits": "/commits?at=test2"
+                    "commits": "/commits?at=test2",
+                    "filename-raw": "/browse/foo/bar/baz.ext?at=test2&raw"
                 }
             }
         ]
@@ -174,6 +220,7 @@ test_groups = [
         "expected_base": "https://github.com/user/repo",
         "tests": [
             {
+                "run-error-tests": True,
                 "expectations": {
                     "default": "",
                     "branch": "/tree/test1",
@@ -190,11 +237,12 @@ test_groups = [
                     "commits": "/commits/master",
                     "commits-branch": "/commits/test1",
                     "commits-tag": "/commits/1.0.0",
-                    "line": 64,
-                    "branch-line": 64,
-                    "directory-line": 64,
-                    "commit-line": 64,
-                    "commits-line": 64
+                    "filename-raw": "/raw/master/foo/bar/baz.ext",
+                    "filename-branch-raw": "/raw/test1/foo/bar/baz.ext",
+                    "filename-blame": "/blame/master/foo/bar/baz.ext",
+                    "filename-branch-blame": "/blame/test1/foo/bar/baz.ext",
+                    "filename-line-blame": "/blame/master/foo/bar/baz.ext#L5",
+                    "filename-branch-line-blame": "/blame/test1/foo/bar/baz.ext#L5"
                 }
             },
             {
@@ -212,7 +260,9 @@ test_groups = [
                     "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/master",
                     "commits-branch": "/commits/test1",
-                    "commits-tag": "/commits/1.0.0"
+                    "commits-tag": "/commits/1.0.0",
+                    "filename-raw": "/raw/master/foo/bar/baz.ext",
+                    "filename-branch-raw": "/raw/test1/foo/bar/baz.ext"
                 }
             },
             {
@@ -221,7 +271,8 @@ test_groups = [
                     "filename": "/blob/test2/foo/bar/baz.ext",
                     "filename-line": "/blob/test2/foo/bar/baz.ext#L5",
                     "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
-                    "commits": "/commits/test2"
+                    "commits": "/commits/test2",
+                    "filename-raw": "/raw/test2/foo/bar/baz.ext"
                 }
             }
         ]
@@ -256,6 +307,7 @@ test_groups = [
         "expected_base": "https://gitlab.com/user/repo",
         "tests": [
             {
+                "run-error-tests": True,
                 "expectations": {
                     "default": "/tree/master",
                     "branch": "/tree/test1",
@@ -272,11 +324,12 @@ test_groups = [
                     "commits": "/commits/master",
                     "commits-branch": "/commits/test1",
                     "commits-tag": "/commits/1.0.0",
-                    "line": 64,
-                    "branch-line": 64,
-                    "directory-line": 64,
-                    "commit-line": 64,
-                    "commits-line": 64
+                    "filename-raw": "/raw/master/foo/bar/baz.ext",
+                    "filename-branch-raw": "/raw/test1/foo/bar/baz.ext",
+                    "filename-blame": "/blame/master/foo/bar/baz.ext",
+                    "filename-branch-blame": "/blame/test1/foo/bar/baz.ext",
+                    "filename-line-blame": "/blame/master/foo/bar/baz.ext#L5",
+                    "filename-branch-line-blame": "/blame/test1/foo/bar/baz.ext#L5"
                 }
             },
             {
@@ -294,7 +347,9 @@ test_groups = [
                     "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/master",
                     "commits-branch": "/commits/test1",
-                    "commits-tag": "/commits/1.0.0"
+                    "commits-tag": "/commits/1.0.0",
+                    "filename-raw": "/raw/master/foo/bar/baz.ext",
+                    "filename-branch-raw": "/raw/test1/foo/bar/baz.ext"
                 }
             },
             {
@@ -303,7 +358,8 @@ test_groups = [
                     "filename": "/blob/test2/foo/bar/baz.ext",
                     "filename-line": "/blob/test2/foo/bar/baz.ext#L5",
                     "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
-                    "commits": "/commits/test2"
+                    "commits": "/commits/test2",
+                    "filename-raw": "/raw/test2/foo/bar/baz.ext"
                 }
             }
         ]
@@ -350,6 +406,7 @@ test_groups = [
         "expected_base": "https://gitorious.org/project/repo",
         "tests": [
             {
+                "run-error-tests": True,
                 "expectations": {
                     "default": "",
                     "branch": "/source/test1",
@@ -366,11 +423,12 @@ test_groups = [
                     "commits": "/commits/master",
                     "commits-branch": "/commits/test1",
                     "commits-tag": "/commits/1.0.0",
-                    "line": 64,
-                    "branch-line": 64,
-                    "directory-line": 64,
-                    "commit-line": 64,
-                    "commits-line": 64
+                    "filename-raw": "/raw/master:foo/bar/baz.ext",
+                    "filename-branch-raw": "/raw/test1:foo/bar/baz.ext",
+                    "filename-blame": "/blame/master:foo/bar/baz.ext",
+                    "filename-branch-blame": "/blame/test1:foo/bar/baz.ext",
+                    "filename-line-blame": "/blame/master:foo/bar/baz.ext#L5",
+                    "filename-branch-line-blame": "/blame/test1:foo/bar/baz.ext#L5"
                 }
             },
             {
@@ -388,7 +446,9 @@ test_groups = [
                     "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/master",
                     "commits-branch": "/commits/test1",
-                    "commits-tag": "/commits/1.0.0"
+                    "commits-tag": "/commits/1.0.0",
+                    "filename-raw": "/raw/master:foo/bar/baz.ext",
+                    "filename-branch-raw": "/raw/test1:foo/bar/baz.ext"
                 }
             },
             {
@@ -397,7 +457,8 @@ test_groups = [
                     "filename": "/source/test2:foo/bar/baz.ext",
                     "filename-line": "/source/test2:foo/bar/baz.ext#L5",
                     "commit": "/commit/092e8627fde84d5558c4429775d3498ec1ddce9a",
-                    "commits": "/commits/test2"
+                    "commits": "/commits/test2",
+                    "filename-raw": "/raw/test2:foo/bar/baz.ext"
                 }
             }
         ]
@@ -432,6 +493,7 @@ test_groups = [
         "expected_base": "https://bitbucket.org/project/repo",
         "tests": [
             {
+                "run-error-tests": True,
                 "expectations": {
                     "default": "/src",
                     "branch": "/src/test1/?at=test1",
@@ -448,11 +510,12 @@ test_groups = [
                     "commits": "/commits/branch/master",
                     "commits-branch": "/commits/branch/test1",
                     "commits-tag": "/commits/tag/1.0.0",
-                    "line": 64,
-                    "branch-line": 64,
-                    "directory-line": 64,
-                    "commit-line": 64,
-                    "commits-line": 64
+                    "filename-raw": "/raw/master/foo/bar/baz.ext?at=master",
+                    "filename-branch-raw": "/raw/test1/foo/bar/baz.ext?at=test1",
+                    "filename-blame": "/annotate/master/foo/bar/baz.ext?at=master",
+                    "filename-branch-blame": "/annotate/test1/foo/bar/baz.ext?at=test1",
+                    "filename-line-blame": "/annotate/master/foo/bar/baz.ext?at=master#cl-5",
+                    "filename-branch-line-blame": "/annotate/test1/foo/bar/baz.ext?at=test1#cl-5"
                 }
             },
             {
@@ -470,7 +533,9 @@ test_groups = [
                     "commit": "/commits/092e8627fde84d5558c4429775d3498ec1ddce9a",
                     "commits": "/commits/branch/master",
                     "commits-branch": "/commits/branch/test1",
-                    "commits-tag": "/commits/tag/1.0.0"
+                    "commits-tag": "/commits/tag/1.0.0",
+                    "filename-raw": "/raw/master/foo/bar/baz.ext?at=master",
+                    "filename-branch-raw": "/raw/test1/foo/bar/baz.ext?at=test1"
                 }
             },
             {
@@ -479,7 +544,8 @@ test_groups = [
                     "filename": "/src/test2/foo/bar/baz.ext?at=test2",
                     "filename-line": "/src/test2/foo/bar/baz.ext?at=test2#cl-5",
                     "commit": "/commits/092e8627fde84d5558c4429775d3498ec1ddce9a",
-                    "commits": "/commits/branch/test2"
+                    "commits": "/commits/branch/test2",
+                    "filename-raw": "/raw/test2/foo/bar/baz.ext?at=test2"
                 }
             }
         ]
@@ -551,7 +617,12 @@ for group in test_groups:
         # Default the directory and filename if they haven't been specified
         directory = subgroup["directory"] if "directory" in subgroup else "foo/bar/"
         filename = subgroup["filename"] if "filename" in subgroup else "foo/bar/baz.ext"
-        for case, expectation in subgroup["expectations"].iteritems():
+
+        expectations = subgroup["expectations"]
+        if "run-error-tests" in subgroup:
+            expectations.update(error_tests)
+
+        for case, expectation in expectations.iteritems():
             # Get the command arguments and expected result for the test case
             test = test_definitions[case]
             expected_output = "{0}{1}".format(group["expected_base"], expectation)
