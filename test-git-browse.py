@@ -4,8 +4,14 @@
 
 __author__ = "Nick Sawyer <nick@nicksawyer.net>"
 
+import argparse
 import os
 import subprocess
+
+# Set up options
+parser = argparse.ArgumentParser()
+parser.add_argument("-q", "--quiet", help="only show errors and summaries instead of all test output", action="store_true")
+args = parser.parse_args()
 
 # Set some variables in the environment for building Stash URLs
 os.environ["TEST_STASH_URL_ROOT"] = "https://stash.mycompany.com"
@@ -72,7 +78,7 @@ test_groups = [
             },
             {
                 "filename": "baz.ext",
-                "prefix-command": "cd foo/bar",
+                "prefix-dir": "foo/bar",
                 "expectations": {
                     "default": "/browse/foo/bar",
                     "branch": "/browse/foo/bar?at=test1",
@@ -144,7 +150,7 @@ test_groups = [
             },
             {
                 "filename": "baz.ext",
-                "prefix-command": "cd foo/bar",
+                "prefix-dir": "foo/bar",
                 "expectations": {
                     "default": "/tree/master/foo/bar",
                     "branch": "/tree/test1/foo/bar",
@@ -214,7 +220,7 @@ test_groups = [
             },
             {
                 "filename": "baz.ext",
-                "prefix-command": "cd foo/bar",
+                "prefix-dir": "foo/bar",
                 "expectations": {
                     "default": "/tree/master/foo/bar",
                     "branch": "/tree/test1/foo/bar",
@@ -308,7 +314,7 @@ test_groups = [
             },
             {
                 "filename": "baz.ext",
-                "prefix-command": "cd foo/bar",
+                "prefix-dir": "foo/bar",
                 "expectations": {
                     "default": "/source/master:foo/bar",
                     "branch": "/source/test1:foo/bar",
@@ -390,7 +396,7 @@ test_groups = [
             },
             {
                 "filename": "baz.ext",
-                "prefix-command": "cd foo/bar",
+                "prefix-dir": "foo/bar",
                 "expectations": {
                     "default": "/src/master/foo/bar?at=master",
                     "branch": "/src/test1/foo/bar?at=test1",
@@ -431,6 +437,14 @@ test_groups = [
     }
 ]
 
+# Helper function to suppress output if quiet mode is enabled
+def out(msg):
+    if not args.quiet:
+        print msg
+
+# Suppress most command output if quiet mode is enabled
+to_dev_null = " &>/dev/null" if args.quiet else ""
+
 # Set up some variables to quantify the test results
 total = 0
 successes = 0
@@ -438,16 +452,16 @@ failures = 0
 
 # Set up the test repository
 print "setting up tests..."
-subprocess.call("git init testrepo", shell=True)
-subprocess.call("cd testrepo; git remote add origin ssh://git@stash.mycompany.com:8080/PROJ/repo.git", shell=True)
-subprocess.call("cd testrepo; mkdir -p foo/bar", shell=True)
-subprocess.call("cd testrepo; touch foo/bar/baz.ext", shell=True)
-subprocess.call("cd testrepo; git add foo", shell=True)
-subprocess.call("cd testrepo; git commit -m \"init\"", shell=True)
-subprocess.call("cd testrepo; git checkout -b test1", shell=True)
-subprocess.call("cd testrepo; git checkout -b test2", shell=True)
-subprocess.call("cd testrepo; git tag -a 1.0.0 -m \"1.0.0\"", shell=True)
-subprocess.call("cd testrepo; git checkout master", shell=True)
+subprocess.call("git init testrepo" + to_dev_null, shell=True)
+subprocess.call("cd testrepo; git remote add origin ssh://git@stash.mycompany.com:8080/PROJ/repo.git" + to_dev_null, shell=True)
+subprocess.call("cd testrepo; mkdir -p foo/bar" + to_dev_null, shell=True)
+subprocess.call("cd testrepo; touch foo/bar/baz.ext" + to_dev_null, shell=True)
+subprocess.call("cd testrepo; git add foo" + to_dev_null, shell=True)
+subprocess.call("cd testrepo; git commit -m \"init\"" + to_dev_null, shell=True)
+subprocess.call("cd testrepo; git checkout -b test1" + to_dev_null, shell=True)
+subprocess.call("cd testrepo; git checkout -b test2" + to_dev_null, shell=True)
+subprocess.call("cd testrepo; git tag -a 1.0.0 -m \"1.0.0\"" + to_dev_null, shell=True)
+subprocess.call("cd testrepo; git checkout master" + to_dev_null, shell=True)
 
 # Loop over each defined group of tests
 for group in test_groups:
@@ -460,15 +474,15 @@ for group in test_groups:
 
     # If there are any setup steps for this test group, run them
     if "setup" in group:
-        print "running test group setup commands..."
-        subprocess.call(group["setup"], shell=True)
+        out("running test group setup commands...")
+        subprocess.call(group["setup"] + to_dev_null, shell=True)
 
     # Handle each group of test cases for this test group
     for subgroup in group["tests"]:
         # Run any setup tasks for the subgroup
         if "before" in subgroup:
-            print "running " + subgroup["before"]
-            subprocess.call("cd testrepo; " + subgroup["before"], shell=True)
+            out("running " + subgroup["before"])
+            subprocess.call("cd testrepo; " + subgroup["before"] + to_dev_null, shell=True)
 
         # Default the directory and filename if they haven't been specified
         directory = subgroup["directory"] if "directory" in subgroup else "foo/bar/"
@@ -480,8 +494,8 @@ for group in test_groups:
             group_total += 1
             prefix = "cd testrepo; "
 
-            if "prefix-command" in subgroup:
-                prefix += subgroup["prefix-command"]
+            if "prefix-dir" in subgroup:
+                prefix += "cd " + subgroup["prefix-dir"]
 
             # Inject the correct directory/filename into the arguments if required
             if "directory" in case:
@@ -493,8 +507,8 @@ for group in test_groups:
             test = DEFAULT_COMMAND_BASE + test
             cmd = "{0} &>/dev/null; {1}".format(prefix, test)
 
-            print "running \"{0}\"...".format(prefix)
-            print "testing \"{0}\"...".format(test)
+            out("running \"{0}\"...".format(prefix))
+            out("testing \"{0}\"...".format(test))
             output = ""
             exit_code = 0
             try:
@@ -505,12 +519,17 @@ for group in test_groups:
 
             # Check the output to see if the test passed or failed, and print the result
             if output == expected_output or exit_code == expectation:
-                print " > \033[92mpass\033[0m"
+                out(" > \033[92mpass\033[0m")
                 group_successes += 1
             else:
+                if args.quiet:
+                    location = ""
+                    if "prefix-dir" in subgroup:
+                        location = " in {0}".format(subgroup["prefix-dir"])
+                    print "testing \"{0}\"{1}...".format(test, location)
                 print " > \033[91mFAIL\033[0m\n > expected: {0}\n > actual:   {1}".format(expected_output, output)
                 group_failures += 1
-            print ""
+            out("")
 
     print "GROUP SUMMARY: {0} total tests, {1} passed, {2} failed\n".format(group_total, group_successes, group_failures)
 
@@ -520,7 +539,7 @@ for group in test_groups:
     failures += group_failures
 
 # Delete the test repo and print the test summary
-print "cleaning up..."
-subprocess.call("rm -rf testrepo", shell=True)
+out("cleaning up...")
+subprocess.call("rm -rf testrepo" + to_dev_null, shell=True)
 
 print "\nTOTAL SUMMARY: {0} total tests, {1} passed, {2} failed\n".format(total, successes, failures)
