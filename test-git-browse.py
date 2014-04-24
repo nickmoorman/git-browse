@@ -49,7 +49,7 @@ test_definitions = {
 # Define groups of tests; each group tests a different type of repository
 test_groups = [
     {
-        "name": "Stash tests (SSH protocol)",
+        "name": "Stash tests (SSH protocol, project repo)",
         "expected_base": "https://stash.mycompany.com/projects/PROJ/repos/repo",
         "tests": [
             {
@@ -108,9 +108,58 @@ test_groups = [
         ]
     },
     {
-        "name": "Stash tests (HTTPS protocol)",
+        "name": "Stash tests (SSH protocol, user repo)",
+        "setup": "cd testrepo; git remote set-url origin ssh://git@stash.mycompany.com:8080/~someuser/repo.git; git checkout master",
+        "expected_base": "https://stash.mycompany.com/users/someuser/repos/repo",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "/browse"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Stash tests (HTTPS protocol, project repo, form 1)",
         "setup": "cd testrepo; git remote set-url origin https://someuser@stash.mycompany.com/scm/proj/repo.git; git checkout master",
         "expected_base": "https://stash.mycompany.com/projects/PROJ/repos/repo",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "/browse"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Stash tests (HTTPS protocol, user repo, form 1)",
+        "setup": "cd testrepo; git remote set-url origin https://someuser@stash.mycompany.com/scm/~someuser/repo.git; git checkout master",
+        "expected_base": "https://stash.mycompany.com/users/someuser/repos/repo",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "/browse"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Stash tests (HTTPS protocol, project repo, form 2)",
+        "setup": "cd testrepo; git remote set-url origin https://someuser@my.company.com/stash/scm/proj/repo.git; git checkout master",
+        "env-setup": "os.putenv(\"TEST_STASH_URL_ROOT\", \"https://my.company.com/stash\")",
+        "expected_base": "https://my.company.com/stash/projects/PROJ/repos/repo",
+        "tests": [
+            {
+                "expectations": {
+                    "default": "/browse"
+                }
+            }
+        ]
+    },
+    {
+        "name": "Stash tests (HTTPS protocol, user repo, form 2)",
+        "setup": "cd testrepo; git remote set-url origin https://someuser@my.company.com/stash/scm/~someuser/repo.git; git checkout master",
+        "expected_base": "https://my.company.com/stash/users/someuser/repos/repo",
         "tests": [
             {
                 "expectations": {
@@ -180,6 +229,18 @@ test_groups = [
     {
         "name": "GitHub tests (HTTPS protocol)",
         "setup": "cd testrepo; git remote set-url origin https://github.com/user/repo.git; git checkout master",
+        "expected_base": "https://github.com/user/repo",
+        "tests": [
+            {
+                "expectations": {
+                    "default": ""
+                }
+            }
+        ]
+    },
+    {
+        "name": "GitHub tests (SVN protocol)",
+        "setup": "cd testrepo; git remote set-url origin https://github.com/user/repo; git checkout master",
         "expected_base": "https://github.com/user/repo",
         "tests": [
             {
@@ -476,6 +537,9 @@ for group in test_groups:
     if "setup" in group:
         out("running test group setup commands...")
         subprocess.call(group["setup"] + to_dev_null, shell=True)
+    if "env-setup" in group:
+        out("running " + group["env-setup"])
+        eval(group["env-setup"])
 
     # Handle each group of test cases for this test group
     for subgroup in group["tests"]:

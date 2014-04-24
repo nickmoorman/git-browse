@@ -94,18 +94,30 @@ fi
 
 # Parse the origin URL to get the parts we need
 # We can handle the following formats:
-#     git@(github|gitlab).com:user/repository.git
-#     https://(github|gitlab).com/user/repository.git
+#  GitHub
+#     git@github.com:user/repository.git
+#     https://github.com/user/repository.git
+#     https://github.com/user/repository
+#  GitLab
+#     git@gitlab.com:user/repository.git
+#     https://gitlab.com/user/repository.git
 #     git@gitlab.myorg.com:user/repository.git
 #     https://gitlab.myorg.com/user/repository.git
+#  Stash
 #     ssh://git@stash.mycompany.com:8080/PROJ/repository.git
-#     https://username@stash.mycompany.com/stash/scm/proj/repository.git
+#     ssh://git@stash.mycompany.com:8080/~username/repository.git
+#     https://username@stash.mycompany.com/scm/proj/repository.git
+#     https://username@stash.mycompany.com/scm/~username/repository.git
+#     https://username@my.company.com/stash/scm/proj/repository.git
+#     https://username@my.company.com/stash/scm/~username/repository.git
+#  Gitorious
 #     git@gitorious.org:project/repository.git
 #     https://git.gitorious.org/project/repository.git
 #     git://gitorious.org/project/repository.git
+# Bitbucket
 #     git@bitbucket.org:user/repository.git
 #     https://bitbucket.org/user/repository.git
-if [[ $ORIGIN =~ .*[:\/]{1}([^\/]+)\/([^\/]+).git$ ]]; then
+if [[ $ORIGIN =~ .*[:\/]{1}([^\/]+)\/([^\/.]+)(.git)?$ ]]; then
     GROUP=${BASH_REMATCH[1]}
     REPO=${BASH_REMATCH[2]}
 else
@@ -248,7 +260,13 @@ case $SERVICE in
     ;;
     # Build URL for Stash
     stash)
-    GROUP=$(echo $GROUP | tr [:lower:] [:upper:])
+    if [[ $GROUP =~ ~(.*) ]]; then
+        GROUP=${BASH_REMATCH[1]}
+        TYPE="users"
+    else
+        GROUP=$(echo $GROUP | tr [:lower:] [:upper:])
+        TYPE="projects"
+    fi
     if [[ $TARGET != "" ]]; then
         TARGET="/$TARGET"
     fi
@@ -261,7 +279,7 @@ case $SERVICE in
     if [[ $LINE != "" ]]; then
         LINE="#$LINE"
     fi
-    URL="$URL_ROOT/projects/$GROUP/repos/$REPO/$_MODE$TARGET$REF$LINE"
+    URL="$URL_ROOT/$TYPE/$GROUP/repos/$REPO/$_MODE$TARGET$REF$LINE"
     ;;
     # Build URL for Gitorious
     gitorious)
