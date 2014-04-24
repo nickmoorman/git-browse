@@ -91,6 +91,8 @@ error_tests = {
 test_groups = [
     {
         "name": "Stash tests (SSH protocol, project repo)",
+        "type": "general",
+        "origin": "ssh://git@stash.mycompany.com:8080/PROJ/repo.git",
         "expected_base": "https://stash.mycompany.com/projects/PROJ/repos/repo",
         "tests": [
             {
@@ -155,68 +157,39 @@ test_groups = [
     },
     {
         "name": "Stash tests (SSH protocol, user repo)",
-        "setup": "cd testrepo; git remote set-url origin ssh://git@stash.mycompany.com:8080/~someuser/repo.git; git checkout master",
-        "expected_base": "https://stash.mycompany.com/users/someuser/repos/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": "/browse"
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "ssh://git@stash.mycompany.com:8080/~someuser/repo.git",
+        "expected": "https://stash.mycompany.com/users/someuser/repos/repo/browse"
     },
     {
         "name": "Stash tests (HTTPS protocol, project repo, form 1)",
-        "setup": "cd testrepo; git remote set-url origin https://someuser@stash.mycompany.com/scm/proj/repo.git; git checkout master",
-        "expected_base": "https://stash.mycompany.com/projects/PROJ/repos/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": "/browse"
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "https://someuser@stash.mycompany.com/scm/proj/repo.git",
+        "expected": "https://stash.mycompany.com/projects/PROJ/repos/repo/browse"
     },
     {
         "name": "Stash tests (HTTPS protocol, user repo, form 1)",
-        "setup": "cd testrepo; git remote set-url origin https://someuser@stash.mycompany.com/scm/~someuser/repo.git; git checkout master",
-        "expected_base": "https://stash.mycompany.com/users/someuser/repos/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": "/browse"
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "https://someuser@stash.mycompany.com/scm/~someuser/repo.git",
+        "expected": "https://stash.mycompany.com/users/someuser/repos/repo/browse"
     },
     {
         "name": "Stash tests (HTTPS protocol, project repo, form 2)",
-        "setup": "cd testrepo; git remote set-url origin https://someuser@my.company.com/stash/scm/proj/repo.git; git checkout master",
+        "type": "simple",
+        "origin": "https://someuser@my.company.com/stash/scm/proj/repo.git",
         "env-setup": "os.putenv(\"TEST_STASH_URL_ROOT\", \"https://my.company.com/stash\")",
-        "expected_base": "https://my.company.com/stash/projects/PROJ/repos/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": "/browse"
-                }
-            }
-        ]
+        "expected": "https://my.company.com/stash/projects/PROJ/repos/repo/browse"
     },
     {
         "name": "Stash tests (HTTPS protocol, user repo, form 2)",
-        "setup": "cd testrepo; git remote set-url origin https://someuser@my.company.com/stash/scm/~someuser/repo.git; git checkout master",
-        "expected_base": "https://my.company.com/stash/users/someuser/repos/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": "/browse"
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "https://someuser@my.company.com/stash/scm/~someuser/repo.git",
+        "expected": "https://my.company.com/stash/users/someuser/repos/repo/browse"
     },
     {
         "name": "GitHub tests (SSH protocol)",
-        "setup": "cd testrepo; git remote set-url origin git@github.com:user/repo.git; git checkout master",
+        "type": "general",
+        "origin": "git@github.com:user/repo.git",
         "expected_base": "https://github.com/user/repo",
         "tests": [
             {
@@ -279,31 +252,20 @@ test_groups = [
     },
     {
         "name": "GitHub tests (HTTPS protocol)",
-        "setup": "cd testrepo; git remote set-url origin https://github.com/user/repo.git; git checkout master",
-        "expected_base": "https://github.com/user/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": ""
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "https://github.com/user/repo.git",
+        "expected": "https://github.com/user/repo"
     },
     {
         "name": "GitHub tests (SVN protocol)",
-        "setup": "cd testrepo; git remote set-url origin https://github.com/user/repo; git checkout master",
-        "expected_base": "https://github.com/user/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": ""
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "https://github.com/user/repo",
+        "expected": "https://github.com/user/repo"
     },
     {
         "name": "GitLab tests (SSH protocol)",
-        "setup": "cd testrepo; git remote set-url origin git@gitlab.com:user/repo.git; git checkout master",
+        "type": "general",
+        "origin": "git@gitlab.com:user/repo.git",
         "expected_base": "https://gitlab.com/user/repo",
         "tests": [
             {
@@ -366,43 +328,26 @@ test_groups = [
     },
     {
         "name": "GitLab tests (HTTPS protocol)",
-        "setup": "cd testrepo; git remote set-url origin https://gitlab.com/user/repo.git; git checkout master",
-        "expected_base": "https://gitlab.com/user/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": "/tree/master"
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "https://gitlab.com/user/repo.git",
+        "expected": "https://gitlab.com/user/repo/tree/master"
     },
     {
         "name": "GitLab tests (SSH protocol, custom domain)",
-        "setup": "cd testrepo; git remote set-url origin git@gitlab.myorg.com/user/repo.git; git checkout master",
-        "expected_base": "https://gitlab.myorg.com/user/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": "/tree/master"
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "git@gitlab.myorg.com/user/repo.git",
+        "expected": "https://gitlab.myorg.com/user/repo/tree/master"
     },
     {
         "name": "GitLab tests (HTTPS protocol, custom domain)",
-        "setup": "cd testrepo; git remote set-url origin https://gitlab.myorg.com/user/repo.git; git checkout master",
-        "expected_base": "https://gitlab.myorg.com/user/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": "/tree/master"
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "https://gitlab.myorg.com/user/repo.git",
+        "expected": "https://gitlab.myorg.com/user/repo/tree/master"
     },
     {
         "name": "Gitorious tests (SSH protocol)",
-        "setup": "cd testrepo; git remote set-url origin git@gitorious.org:project/repo.git; git checkout master",
+        "type": "general",
+        "origin": "git@gitorious.org:project/repo.git",
         "expected_base": "https://gitorious.org/project/repo",
         "tests": [
             {
@@ -465,31 +410,20 @@ test_groups = [
     },
     {
         "name": "Gitorious tests (HTTPS protocol)",
-        "setup": "cd testrepo; git remote set-url origin https://git.gitorious.org/project/repo.git; git checkout master",
-        "expected_base": "https://gitorious.org/project/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": ""
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "https://git.gitorious.org/project/repo.git",
+        "expected": "https://gitorious.org/project/repo"
     },
     {
         "name": "Gitorious tests (Git protocol)",
-        "setup": "cd testrepo; git remote set-url origin git://gitorious.org/project/repo.git; git checkout master",
-        "expected_base": "https://gitorious.org/project/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": ""
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "git://gitorious.org/project/repo.git",
+        "expected": "https://gitorious.org/project/repo"
     },
     {
         "name": "Bitbucket tests (SSH protocol)",
-        "setup": "cd testrepo; git remote set-url origin git@bitbucket.org:project/repo.git; git checkout master",
+        "type": "general",
+        "origin": "git@bitbucket.org:project/repo.git",
         "expected_base": "https://bitbucket.org/project/repo",
         "tests": [
             {
@@ -552,15 +486,9 @@ test_groups = [
     },
     {
         "name": "Bitbucket tests (HTTPS protocol)",
-        "setup": "cd testrepo; git remote set-url origin https://user@bitbucket.org/project/repo.git; git checkout master",
-        "expected_base": "https://bitbucket.org/project/repo",
-        "tests": [
-            {
-                "expectations": {
-                    "default": "/src"
-                }
-            }
-        ]
+        "type": "simple",
+        "origin": "https://user@bitbucket.org/project/repo.git",
+        "expected": "https://bitbucket.org/project/repo/src"
     }
 ]
 
@@ -580,7 +508,7 @@ failures = 0
 # Set up the test repository
 print "setting up tests..."
 subprocess.call("git init testrepo" + to_dev_null, shell=True)
-subprocess.call("cd testrepo; git remote add origin ssh://git@stash.mycompany.com:8080/PROJ/repo.git" + to_dev_null, shell=True)
+subprocess.call("cd testrepo; git remote add origin this-is-fake" + to_dev_null, shell=True)
 subprocess.call("cd testrepo; mkdir -p foo/bar" + to_dev_null, shell=True)
 subprocess.call("cd testrepo; touch foo/bar/baz.ext" + to_dev_null, shell=True)
 subprocess.call("cd testrepo; git add foo" + to_dev_null, shell=True)
@@ -588,7 +516,39 @@ subprocess.call("cd testrepo; git commit -m \"init\"" + to_dev_null, shell=True)
 subprocess.call("cd testrepo; git checkout -b test1" + to_dev_null, shell=True)
 subprocess.call("cd testrepo; git checkout -b test2" + to_dev_null, shell=True)
 subprocess.call("cd testrepo; git tag -a 1.0.0 -m \"1.0.0\"" + to_dev_null, shell=True)
-subprocess.call("cd testrepo; git checkout master" + to_dev_null, shell=True)
+
+# Run the test case and handle the output
+def run_test(test_args, expected_output, prefix=""):
+    test = DEFAULT_COMMAND_BASE + test_args
+    prefix_command = "cd testrepo; " + prefix
+    command = "{0} &>/dev/null; {1}".format(prefix_command, test)
+
+    out("running \"{0}\"...".format(prefix_command))
+    out("testing \"{0}\"...".format(test))
+
+    output = ""
+    exit_code = 0
+    try:
+        output = subprocess.check_output(command, shell=True).rstrip()
+    except subprocess.CalledProcessError, e:
+        output = e.output
+        exit_code = e.returncode
+
+    # Check the output to see if the test passed or failed, and print the result
+    if output == expected_output or exit_code == expectation:
+        out(" > \033[92mpass\033[0m")
+        success = True
+    else:
+        if args.quiet:
+            location = ""
+            if prefix != "":
+                location = " in {0}".format(prefix)
+            print "testing \"{0}\"{1}...".format(test, location)
+        print " > \033[91mFAIL\033[0m\n > expected: {0}\n > actual:   {1}".format(expected_output, output)
+        success = False
+    out("")
+
+    return success
 
 # Loop over each defined group of tests
 for group in test_groups:
@@ -600,71 +560,62 @@ for group in test_groups:
     print "\033[93m===== " + group["name"] + " =====\033[0m"
 
     # If there are any setup steps for this test group, run them
-    if "setup" in group:
+    if "origin" in group:
         out("running test group setup commands...")
-        subprocess.call(group["setup"] + to_dev_null, shell=True)
+        setup_cmd = "cd testrepo; git remote set-url origin {0}; git checkout master {1}".format(group["origin"], to_dev_null)
+        subprocess.call(setup_cmd, shell=True)
     if "env-setup" in group:
         out("running " + group["env-setup"])
         eval(group["env-setup"])
 
-    # Handle each group of test cases for this test group
-    for subgroup in group["tests"]:
-        # Run any setup tasks for the subgroup
-        if "before" in subgroup:
-            out("running " + subgroup["before"])
-            subprocess.call("cd testrepo; " + subgroup["before"] + to_dev_null, shell=True)
+    if group["type"] == "simple":
+        # Run the simple test to ensure origin detection works
+        group_total += 1
+        success = run_test(test_definitions["default"], group["expected"])
+        if success:
+            group_successes += 1
+        else:
+            group_failures += 1
+    else:
+        # Handle each group of test cases for this test group
+        for subgroup in group["tests"]:
+            # Run any setup tasks for the subgroup
+            if "before" in subgroup:
+                out("running " + subgroup["before"])
+                subprocess.call("cd testrepo; " + subgroup["before"] + to_dev_null, shell=True)
 
-        # Default the directory and filename if they haven't been specified
-        directory = subgroup["directory"] if "directory" in subgroup else "foo/bar/"
-        filename = subgroup["filename"] if "filename" in subgroup else "foo/bar/baz.ext"
+            # Default the directory and filename if they haven't been specified
+            directory = subgroup["directory"] if "directory" in subgroup else "foo/bar/"
+            filename = subgroup["filename"] if "filename" in subgroup else "foo/bar/baz.ext"
 
-        expectations = subgroup["expectations"]
-        if "run-error-tests" in subgroup:
-            expectations.update(error_tests)
+            # If requested, add the test cases that are expected to always return errors
+            expectations = subgroup["expectations"]
+            if "run-error-tests" in subgroup:
+                expectations.update(error_tests)
 
-        for case, expectation in expectations.iteritems():
-            # Get the command arguments and expected result for the test case
-            test = test_definitions[case]
-            expected_output = "{0}{1}".format(group["expected_base"], expectation)
-            group_total += 1
-            prefix = "cd testrepo; "
+            # Loop over test cases to prepare and run them
+            for case, expectation in expectations.iteritems():
+                # Get the command arguments and expected result for the test case
+                test = test_definitions[case]
+                expected_output = "{0}{1}".format(group["expected_base"], expectation)
+                group_total += 1
+                prefix = ""
 
-            if "prefix-dir" in subgroup:
-                prefix += "cd " + subgroup["prefix-dir"]
+                if "prefix-dir" in subgroup:
+                    prefix = "cd " + subgroup["prefix-dir"]
 
-            # Inject the correct directory/filename into the arguments if required
-            if "directory" in case:
-                test = test.format(directory)
-            elif "filename" in case:
-                test = test.format(filename)
+                # Inject the correct directory/filename into the arguments if required
+                if "directory" in case:
+                    test = test.format(directory)
+                elif "filename" in case:
+                    test = test.format(filename)
 
-            # Finally, execute the test case
-            test = DEFAULT_COMMAND_BASE + test
-            cmd = "{0} &>/dev/null; {1}".format(prefix, test)
-
-            out("running \"{0}\"...".format(prefix))
-            out("testing \"{0}\"...".format(test))
-            output = ""
-            exit_code = 0
-            try:
-                output = subprocess.check_output(cmd, shell=True).rstrip()
-            except subprocess.CalledProcessError, e:
-                output = e.output
-                exit_code = e.returncode
-
-            # Check the output to see if the test passed or failed, and print the result
-            if output == expected_output or exit_code == expectation:
-                out(" > \033[92mpass\033[0m")
-                group_successes += 1
-            else:
-                if args.quiet:
-                    location = ""
-                    if "prefix-dir" in subgroup:
-                        location = " in {0}".format(subgroup["prefix-dir"])
-                    print "testing \"{0}\"{1}...".format(test, location)
-                print " > \033[91mFAIL\033[0m\n > expected: {0}\n > actual:   {1}".format(expected_output, output)
-                group_failures += 1
-            out("")
+                # Finally, execute the test case
+                success = run_test(test, expected_output, prefix)
+                if success:
+                    group_successes += 1
+                else:
+                    group_failures += 1
 
     print "GROUP SUMMARY: {0} total tests, {1} passed, {2} failed\n".format(group_total, group_successes, group_failures)
 
